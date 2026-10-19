@@ -1,6 +1,6 @@
 # Settings Option Catalog
 
-Last reviewed: 2026-09-04
+Last reviewed: 2026-10-18
 
 Source of truth reviewed:
 
@@ -18,6 +18,16 @@ This catalog is for agents planning settings-panel redesigns or feature work. It
 - Treat page, permalink, map, payment, email, and save-contract options as higher risk because they affect runtime behavior outside the settings UI.
 - Distinguish direct core settings, core filter-injected settings, and extension-provided settings before planning a redesign.
 - For extension-specific settings, inspect the installed/active extension source before documenting or redesigning those settings.
+
+## Other Features → MCP
+
+Core source: includes/modules/mcp/class-module.php; dedicated UI: assets/js/directorist-mcp-settings.js.
+
+- **mcp_enabled**: boolean in atbdp_option, default false, field type mcp-configuration. Values normalize to boolean. The UI requires manage_options, the native settings nonce, Abilities API and MCP Adapter 0.6.1+ before enabling.
+- The switch immediately saves only mcp_enabled through save_settings_data. Confirmed values update live/cached Vuex state; general saves omit the key. Configure appears when enabled and opens the MCP Connection drawer.
+- Readers: Module::enabled(), ability/server registration, Access::connected(), all executions, status/templates and cooperating native-write locks. Changing enablement rotates directorist_mcp_epoch and invalidates previews.
+- Credentials, snippets, selected client and drawer visibility remain component-local. Status/templates require manage_options; the public guide contains no credentials. Tools cannot change their own enablement setting.
+- Navigation: root other_features, submenu mcp, hash #other_features__mcp. The registry mount adapter removes only this field's fallback placement before inserting its root menu.
 
 ## Listings
 

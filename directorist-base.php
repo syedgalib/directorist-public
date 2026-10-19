@@ -308,6 +308,9 @@ final class Directorist_Base {
             add_filter( 'display_post_states', [self::$instance, 'add_page_states'], 10, 2 );
             self::init_hooks();
 
+            // Optional MCP server and its native settings field (disabled by default).
+            require_once ATBDP_INC_DIR . 'modules/mcp/bootstrap.php';
+
             // Initialize appsero tracking
             self::$instance->init_appsero();
 

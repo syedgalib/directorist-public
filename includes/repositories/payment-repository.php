@@ -55,6 +55,7 @@ class PaymentRepository extends Repository {
      * @return int Payment ID, or zero when the insert fails.
      */
     public function create_without_order_update( \Directorist\Utils\DTO $dto ) {
+        do_action( 'directorist_mcp_before_native_payment_write' );
         global $wpdb;
 
         $payment_id = parent::create( $dto );
@@ -63,6 +64,7 @@ class PaymentRepository extends Repository {
     }
 
     public function update_status_by_order_id( int $order_id, string $status ): int {
+        do_action( 'directorist_mcp_before_native_payment_write' );
         return $this->get_query_builder()
             ->where( 'order_id', $order_id )
             ->update( [ 'status' => $status ] );

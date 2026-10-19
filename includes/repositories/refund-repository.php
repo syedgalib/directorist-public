@@ -57,6 +57,7 @@ class RefundRepository extends Repository {
      * @throws Exception When order not found, already refunded, or refund amount exceeds remaining amount
      */
     public function create( $dto ) {
+        do_action( 'directorist_mcp_before_native_refund_write' );
         // Retrieve and validate the order exists
         $order = $this->order_repository->to_dto( $this->order_repository->get_by_id( $dto->get_order_id() ) );
 

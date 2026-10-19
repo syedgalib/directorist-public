@@ -413,10 +413,20 @@ if ( ! class_exists( 'ATBDP_Extension_Activity' ) ) {
          * @return array
          */
         public function get_dashboard_setup( $metrics = [] ) {
-            $directories   = directory_types();
-            $directories   = is_array( $directories ) && ! is_wp_error( $directories ) ? $directories : [];
+            return $this->resolve_dashboard_setup( $metrics );
+        }
 
-            if ( ! $this->is_dashboard_setup_visible( $directories ) ) {
+        /** Read completion predicates independently of the native setup-window visibility. */
+        public function get_dashboard_setup_details( $metrics = [] ) {
+            return $this->resolve_dashboard_setup( $metrics, true );
+        }
+
+        private function resolve_dashboard_setup( $metrics, $include_hidden = false ) {
+            $directories = directory_types();
+            $directories = is_array( $directories ) && ! is_wp_error( $directories ) ? $directories : [];
+
+            $is_visible = $this->is_dashboard_setup_visible( $directories );
+            if ( ! $is_visible && ! $include_hidden ) {
                 return [
                     'is_visible' => false,
                     'progress'   => 0,
@@ -478,7 +488,7 @@ if ( ! class_exists( 'ATBDP_Extension_Activity' ) ) {
             $progress = $steps ? (int) round( ( $completed_steps / count( $steps ) ) * 100 ) : 0;
 
             return [
-                'is_visible' => true,
+                'is_visible'  => $is_visible,
                 'progress'    => $progress,
                 'title'       => 100 === $progress
                     ? __( 'Your directory foundation is ready', 'directorist' )

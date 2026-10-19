@@ -193,6 +193,7 @@ class OrderRepository extends Repository {
      * @throws Exception If the update operation fails.
      */
     public function update( \Directorist\Utils\DTO $dto ) {
+        do_action( 'directorist_mcp_before_native_order_write' );
         $old_order = $this->get_by_id( $dto->get_id() );
         
         if ( ! $old_order ) {
@@ -225,6 +226,7 @@ class OrderRepository extends Repository {
      * @throws Exception If the update operation fails.
      */
     public function silent_update( \Directorist\Utils\DTO $dto ) {
+        do_action( 'directorist_mcp_before_native_order_write' );
         return parent::update( $dto );
     }
 

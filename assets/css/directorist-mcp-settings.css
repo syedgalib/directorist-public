@@ -1,0 +1,319 @@
+.directorist-mcp-field {
+  outline: none;
+  color: #202428;
+  font-size: 14px;
+  width: 100%;
+}
+.directorist-mcp-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 8px 0;
+}
+.directorist-mcp-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.directorist-mcp-title h3 {
+  font-size: 16px;
+  margin: 0 !important;
+}
+.directorist-mcp-card p {
+  margin: 10px 0 0;
+  color: #606775;
+  max-width: 640px;
+}
+.directorist-mcp-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.directorist-mcp-badge {
+  display: inline-block;
+  border-radius: 20px;
+  padding: 3px 9px;
+  background: #f0f1f3;
+  font-size: 12px;
+  color: #535b67;
+}
+.directorist-mcp-badge.is-active {
+  background: #e7f6ed;
+  color: #187840;
+}
+.directorist-mcp-button {
+  border: 1px solid #d8dce3 !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  padding: 8px 14px !important;
+  color: #303846 !important;
+  cursor: pointer;
+  line-height: 1.4;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.directorist-mcp-button.is-primary {
+  background: #3e62f5 !important;
+  border-color: #3e62f5 !important;
+  color: #fff !important;
+}
+.directorist-mcp-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.directorist-mcp-button:focus-visible,
+.directorist-mcp-link:focus-visible,
+.directorist-mcp-tabs button:focus-visible,
+.directorist-mcp-close:focus-visible {
+  outline: 2px solid #3e62f5;
+  outline-offset: 3px;
+}
+.directorist-mcp-switch {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 24px;
+  margin: 0 !important;
+}
+.directorist-mcp-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+.directorist-mcp-switch span {
+  display: block;
+  width: 40px;
+  border-radius: 20px;
+  background: #c6cbd3;
+  transition: background 0.15s;
+}
+.directorist-mcp-switch span:after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #0002;
+  transition: transform 0.15s;
+}
+.directorist-mcp-switch input:checked + span {
+  background: #3e62f5;
+}
+.directorist-mcp-switch input:checked + span:after {
+  transform: translateX(16px);
+}
+.directorist-mcp-switch input:focus-visible + span {
+  outline: 2px solid #3e62f5;
+  outline-offset: 3px;
+}
+.directorist-mcp-switch input:disabled {
+  cursor: wait;
+}
+.directorist-mcp-switch input:disabled + span {
+  opacity: 0.5;
+}
+.directorist-mcp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100100;
+  background: #0f17285c;
+  display: flex;
+  justify-content: flex-end;
+  color: #202428;
+  font-family: inherit;
+  font-size: 14px;
+}
+.directorist-mcp-drawer {
+  width: 640px;
+  max-width: 100vw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: -5px 0 30px #1113;
+  overflow: hidden;
+}
+.directorist-mcp-drawer > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+.directorist-mcp-drawer h2 {
+  font-size: 19px;
+  margin: 0;
+}
+.directorist-mcp-drawer h3 {
+  font-size: 16px;
+  margin: 26px 0 12px;
+}
+.directorist-mcp-close {
+  background: none;
+  border: 0;
+  font-size: 28px;
+  cursor: pointer;
+  color: #606775;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.directorist-mcp-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+  overscroll-behavior: contain;
+}
+.directorist-mcp-drawer p {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.directorist-mcp-label {
+  display: block;
+  font-weight: 600;
+  margin: 22px 0 8px;
+}
+.directorist-mcp-copy-row {
+  display: flex;
+  gap: 8px;
+}
+.directorist-mcp-copy-row input {
+  flex: 1;
+  min-width: 0;
+}
+.directorist-mcp-drawer input:not([type="checkbox"]) {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 13px;
+  border: 1px solid #d8dce3;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-height: 38px;
+  background: #fff;
+  color: #303846;
+}
+.directorist-mcp-drawer input:focus {
+  border-color: #3e62f5;
+  outline: 1px solid #3e62f5;
+}
+.directorist-mcp-credentials {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.directorist-mcp-credentials label {
+  font-size: 13px;
+  font-weight: 500;
+}
+.directorist-mcp-credentials input {
+  margin-top: 6px;
+}
+.directorist-mcp-link {
+  background: none;
+  border: 0;
+  color: #3e62f5;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  font-size: 13px;
+}
+.directorist-mcp-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-top: 24px;
+  overflow: auto;
+  padding-bottom: 1px;
+}
+.directorist-mcp-tabs button {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 10px 9px;
+  white-space: nowrap;
+  color: #606775;
+  cursor: pointer;
+  font-size: 13px;
+}
+.directorist-mcp-tabs button[aria-selected="true"] {
+  color: #3e62f5;
+  border-bottom-color: #3e62f5;
+  font-weight: 600;
+}
+.directorist-mcp-snippet {
+  padding: 16px;
+  background: #f5f7fa;
+  border: 1px solid #e7eaf0;
+  border-radius: 8px;
+  font:
+    12px/1.7 ui-monospace,
+    SFMono-Regular,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 360px;
+  overflow: auto;
+  color: #263448;
+  user-select: text;
+}
+.directorist-mcp-note {
+  color: #606775 !important;
+  font-size: 13px !important;
+  line-height: 1.6;
+}
+.directorist-mcp-error {
+  color: #b42318 !important;
+}
+.directorist-mcp-feedback {
+  background: #edf7f0;
+  color: #176838;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.directorist-mcp-drawer details {
+  margin-top: 24px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 18px;
+}
+.directorist-mcp-drawer summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .directorist-mcp-drawer {
+    width: 100vw;
+  }
+  .directorist-mcp-drawer-body {
+    padding: 20px;
+  }
+  .directorist-mcp-card {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .directorist-mcp-credentials {
+    grid-template-columns: 1fr;
+  }
+  .directorist-mcp-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .directorist-mcp-switch span,
+  .directorist-mcp-switch span:after {
+    transition: none;
+  }
+}

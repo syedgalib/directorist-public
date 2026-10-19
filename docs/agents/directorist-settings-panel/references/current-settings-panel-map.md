@@ -1,6 +1,6 @@
 # Current Settings Panel Map
 
-Last reviewed: 2026-10-06
+Last reviewed: 2026-10-18
 
 ## Main Entry Points
 
@@ -50,6 +50,16 @@ Last reviewed: 2026-10-06
 - Button fields can opt into inline REST actions with `async-action: true`. The gateway endpoint keeps its normal link/redirect fallback and, for requests with `X-Directorist-Async: 1`, returns `success`, `connected`, `webhook_id`, `message`, `action_url`, and `action_label`. Successful responses update the live and cached field together without marking settings unsaved; errors leave the saved state untouched. A saved webhook ID is labeled `Webhook ID saved`, not independently verified with the provider. Empty arrays/objects are not valid saved IDs; WordPress can supply `[]` for an unset webhook field, and JavaScript's `Boolean([])` would otherwise falsely show a connected state.
 - Async button fields need a wider action track than ordinary fields to keep the action and status together. The scoped settings-panel layout uses a 440px action track on wide screens, then stacks the label above a full-width control at 1399px and below; the feedback card stays inside that control track.
 - PayPal and Stripe async webhook controls compare their environment-specific credential fields against `cached_fields`. When both keys are present but unsaved and no webhook ID exists, `Save & Register` first submits only that gateway environment's credential keys through the existing settings AJAX endpoint, then registers only after a successful save. Unrelated unsaved settings are not submitted; a failed save or keys changing mid-save blocks registration. Missing keys block the action with a hover/focus explanation. A saved webhook ID locks the matching credential text fields (including quick-search editing) until Disconnect succeeds; if credentials are missing from an older or external change, those fields stay editable as a recovery path. A saved webhook ID is not cleared when keys are removed; without valid credentials for the same gateway account or app, the gateway delete request cannot run, so the UI shows `Keys missing` and instructs the admin to add valid keys, save, then disconnect. The saved ID is not independent proof that the provider still has the webhook.
+
+## Dedicated MCP Configuration Field
+
+The MCP module injects mcp_enabled and root **Other Features → MCP** through the existing settings filters. assets/js/directorist-mcp-settings.js registers McpConfigurationField through DirectoristSettingsPanel.registerComponent() and its mount hook. The asset is in the shipped assets/js tree because packaging excludes assets/src.
+
+The mount adapter uses original builder-data layouts, removes only the new MCP fallback placement, prepares navigation and restores the deep link. It preserves the shell, search, breadcrumbs and store. Enablement defaults to false; immediate saves use the native nonce/capability-protected save_settings_data contract and submit only this key. Confirmed saves update live/cached values; general saves omit the key to avoid stale toggles.
+
+The right-side modal is portaled to document.body, traps focus, restores prior background inert/scroll state and clears temporary credentials on close/navigation/unmount. Status and snippet templates are permission-protected REST reads. Credentials never enter Vuex or request payloads. Scoped CSS ships directly without a legacy bundle rebuild.
+
+Browser checks on 2026-10-18 covered root navigation/deep links, Configure visibility, tabs, local dummy-credential snippets, password cleanup, Escape and focus return. Future changes should also test unrelated unsaved settings alongside the immediate toggle.
 
 ## Connected Systems
 
@@ -150,3 +160,5 @@ Last updated: 2026-09-04
 - `Monetization > Currency` uses two cards: `Display currency` with existing `g_currency` / `g_currency_position` and hidden `g_currency_note`; and `Checkout currency` with existing `payment_currency` / `payment_currency_position`, hidden `payment_currency_note`, and nested advanced `Number formatting` for `payment_thousand_separator` / `payment_decimal_separator`. Do not add a fake or saved `Match display currency` option; no existing key supports it.
 - `Monetization > Featured listings` keeps existing `enable_monetization`, `enable_featured_listing`, `featured_listing_price`, `featured_listing_time`, and `featured_listing_desc` keys and preserves their original `show-if` rules. `featured_listing_desc` renders as a full-width textarea below label/description. `featured_listing_price` and `featured_listing_time` use display-only suffixes for currency code and `days`.
 - `Monetization > Payment gateways` is the core redesigned gateway tab. It renders existing `active_gateways` as a settings-panel-only `Bank transfer` toggle that only adds/removes the `bank_transfer` value while preserving any extension gateway values in the array, then renders `default_gateway`. The same tab also renders `Bank transfer details` with hidden `offline_payment_note`, visible `bank_transfer_title`, and nested advanced `Description & bank instructions` for `bank_transfer_description` / `bank_transfer_instruction`. Do not render a separate redesigned `Bank transfer` submenu. Payment gateway extension submenus registered under `atbdp_monetization_settings_submenu` render as additional `Monetization` tabs after `Payment gateways`, preserving their extension-provided labels, sections, fields, and save keys.
+
+The MCP status summary now derives eligible tool counts and groups, including Orders and registered extension groups, from includes/modules/mcp/class-registry.php through Catalog::definitions() and Tools::available(). The existing drawer renders that response without a second toggle or Vuex/credential/save contract change.
