@@ -2538,6 +2538,10 @@ var FIELD_OVERRIDES = {
     label: 'Featured fee',
     description: 'What a user pays to feature a single listing.'
   },
+  featured_listing_payment_type: {
+    label: 'Payment Type',
+    description: 'Choose which checkout provider handles featured upgrades.'
+  },
   featured_listing_time: {
     label: 'Featured duration',
     description: 'How long a listing stays featured before it returns to normal.'
@@ -3169,7 +3173,7 @@ var FIELD_GROUPS = {
   monetizationFeatured: [{
     key: 'featured_listings',
     title: 'Featured listings',
-    fields: ['enable_monetization', 'enable_featured_listing', 'featured_listing_price', 'featured_listing_time', 'featured_listing_desc']
+    fields: ['enable_monetization', 'enable_featured_listing', 'featured_listing_payment_type', 'featured_listing_price', 'featured_listing_time', 'featured_listing_desc']
   }],
   monetizationGateways: [{
     key: 'payment_gateways',

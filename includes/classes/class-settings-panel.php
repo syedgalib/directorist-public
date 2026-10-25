@@ -462,6 +462,16 @@ Please remember that your order may be canceled if you do not make your payment 
             $default_size = directorist_default_preview_size();
             $default_preview_size_text = $default_size['width'] . 'x' . $default_size['height'] . ' px';
 
+            $featured_listing_payment_types = apply_filters(
+                'directorist_featured_listing_payment_type_options',
+                [
+                    [
+                        'value' => 'directorist',
+                        'label' => __( 'Directorist', 'directorist' ),
+                    ],
+                ]
+            );
+
 
             $this->fields = apply_filters(
                 'atbdp_listing_type_settings_field_list', [
@@ -3983,6 +3993,21 @@ Best regards,
                 ]
             );
 
+            if ( is_array( $featured_listing_payment_types ) && count( $featured_listing_payment_types ) > 1 ) {
+                $this->fields['featured_listing_payment_type'] = [
+                    'label'   => __( 'Payment Type', 'directorist' ),
+                    'type'    => 'select',
+                    'value'   => 'directorist',
+                    'options' => array_values( $featured_listing_payment_types ),
+                    'show-if' => [
+                        'where'      => 'enable_featured_listing',
+                        'conditions' => [
+                            [ 'key' => 'value', 'compare' => '=', 'value' => true ],
+                        ],
+                    ],
+                ];
+            }
+
             $this->register_web_push_backup_fields();
 
             $this->layouts = apply_filters(
@@ -4716,6 +4741,7 @@ Best regards,
                                             'featured' => [
                                                 'fields'      => [
                                                     'enable_featured_listing',
+                                                    'featured_listing_payment_type',
                                                     'featured_listing_desc',
                                                     'featured_listing_price',
                                                     'featured_listing_time',

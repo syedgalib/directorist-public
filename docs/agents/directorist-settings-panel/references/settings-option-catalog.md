@@ -1,6 +1,6 @@
 # Settings Option Catalog
 
-Last reviewed: 2026-09-04
+Last reviewed: 2026-10-04
 
 Source of truth reviewed:
 
@@ -308,6 +308,7 @@ Redesigned UI note (2026-06-08): `Monetization > Currency` shows a presentation-
 ### Featured Listings
 
 - `enable_featured_listing`: enables paid featured listing purchases.
+- `featured_listing_payment_type`: selects the featured-listing checkout provider. Core contributes `Directorist` through `directorist_featured_listing_payment_type_options`; integrations can append providers to the same filter. The select is registered only when more than one provider is available and is shown only while featured upgrades are enabled.
 - `featured_listing_desc`: checkout description for featured listing purchase.
 - `featured_listing_price`: featured listing fee.
 - `featured_listing_time`: featured listing duration in days.
