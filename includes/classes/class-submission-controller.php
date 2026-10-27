@@ -9,6 +9,7 @@ use WP_Error;
 use Exception;
 use ATBDP_Permalink;
 use Directorist\Helper;
+use Directorist\Fields\Conditional_Logic;
 use Directorist\Fields\Fields;
 
 class SubmissionController {
@@ -44,6 +45,10 @@ class SubmissionController {
         return ( $field->is_category_only() && ( is_null( self::$selected_categories ) || ! in_array( $field->get_assigned_category(), self::$selected_categories, true ) ) );
     }
 
+    protected static function should_ignore_conditional_logic_field( &$field, &$posted_data ) {
+        return ! Conditional_Logic::should_show_field( $field->get_props(), $posted_data );
+    }
+
     protected static function is_field_submission_empty( &$field, &$posted_data ) {
         return $field->is_value_empty( $posted_data );
     }
@@ -52,6 +57,10 @@ class SubmissionController {
         $should_validate = (bool) apply_filters( 'atbdp_add_listing_form_validation_logic', true, $field->get_props(), $posted_data );
 
         if ( self::should_ignore_category_custom_field( $field ) ) {
+            $should_validate = false;
+        }
+
+        if ( self::should_ignore_conditional_logic_field( $field, $posted_data ) ) {
             $should_validate = false;
         }
 
@@ -100,6 +109,13 @@ class SubmissionController {
             }
         }
 
+        $value = self::get_safe_submitted_filename( $value );
+        if ( ! $value ) {
+            $field->add_error( __( 'Invalid file name.', 'directorist' ) );
+
+            return;
+        }
+
         try {
             $upload_dir = wp_get_upload_dir();
             $temp_dir   = trailingslashit( $upload_dir['basedir'] ) . trailingslashit( directorist_get_temp_upload_dir() . DIRECTORY_SEPARATOR . date( 'nj' ) );
@@ -107,6 +123,12 @@ class SubmissionController {
 
             if ( is_dir( $filepath ) || ! file_exists( $filepath ) ) {
                 $field->add_error( __( 'Invalid file or file does not exist.', 'directorist' ) );
+                return;
+            }
+
+            if ( ! self::is_path_inside_directory( $filepath, $temp_dir ) ) {
+                $field->add_error( __( 'Invalid file path.', 'directorist' ) );
+
                 return;
             }
 
@@ -156,6 +178,37 @@ class SubmissionController {
         }
     }
 
+    protected static function get_safe_submitted_filename( $filename ) {
+        if ( ! is_string( $filename ) ) {
+            return false;
+        }
+
+        $filename = trim( $filename );
+
+        if ( '' === $filename || wp_basename( $filename ) !== $filename || preg_match( '#[\\\\/]#', $filename ) ) {
+            return false;
+        }
+
+        $sanitized_filename = sanitize_file_name( $filename );
+
+        if ( '' === $sanitized_filename || $sanitized_filename !== $filename ) {
+            return false;
+        }
+
+        return $filename;
+    }
+
+    protected static function is_path_inside_directory( $path, $directory ) {
+        $real_path      = realpath( $path );
+        $real_directory = realpath( $directory );
+
+        if ( false === $real_path || false === $real_directory ) {
+            return false;
+        }
+
+        return 0 === strpos( $real_path, trailingslashit( $real_directory ) );
+    }
+
     protected static function get_file_value( $field, &$posted_data ) {
         $value = $field->get_value( $posted_data );
 
@@ -173,6 +226,11 @@ class SubmissionController {
             if ( $stored_value && ( $value === $stored_value ) ) {
                 return $stored_value;
             }
+        }
+
+        $value = self::get_safe_submitted_filename( $value );
+        if ( ! $value ) {
+            return;
         }
 
         try {
@@ -193,8 +251,16 @@ class SubmissionController {
                 return;
             }
 
+            if ( ! self::is_path_inside_directory( $filepath, $temp_dir ) ) {
+                return;
+            }
+
             if ( file_exists( $target_dir . $value ) ) {
                 $value = wp_unique_filename( $target_dir, $value );
+            }
+
+            if ( ! self::is_path_inside_directory( $target_dir, $upload_dir['basedir'] ) ) {
+                return;
             }
 
             rename( $filepath, $target_dir . $value );
@@ -334,6 +400,10 @@ class SubmissionController {
         $tag_ids = array();
 
         foreach ( $tags as $tag ) {
+            if ( ! directorist_is_valid_tag_name( $tag ) ) {
+                $error->add( 'directorist_invalid_tag', __( 'Tag names cannot contain HTML.', 'directorist' ) );
+                continue;
+            }
 
             if ( $tag && ( $_tag = term_exists( $tag, ATBDP_TAGS ) ) ) {
                 $tag_ids[] = (int) $_tag['term_id'];
@@ -444,22 +514,22 @@ class SubmissionController {
                     return false;
                 }
 
-                if ( is_numeric( $value ) && $value == 0 ) {
-                    return false;
-                }
-
                 return true;
             }, ARRAY_FILTER_USE_BOTH 
         );
     }
 
-    protected static function reset_listing_taxonomy( $listing_id, $taxonomy_data = array() ) {
+    protected static function set_listing_taxonomy( $listing_id, $taxonomy_data = array() ) {
         $taxonomies = array( ATBDP_LOCATION, ATBDP_CATEGORY, ATBDP_TAGS );
 
         foreach ( $taxonomies as $taxonomy ) {
-            if ( isset( $taxonomy_data[ $taxonomy ] ) && empty( $taxonomy_data[ $taxonomy ] ) ) {
-                wp_set_object_terms( $listing_id, '', $taxonomy );
+            if ( ! array_key_exists( $taxonomy, $taxonomy_data ) ) {
+                continue;
             }
+
+            $term_ids = array_map( 'intval', (array) $taxonomy_data[ $taxonomy ] );
+
+            wp_set_object_terms( $listing_id, $term_ids, $taxonomy );
         }
     }
 
@@ -575,10 +645,11 @@ class SubmissionController {
 
         static::cache_selected_categories( $directory_id, $posted_data );
 
-        $error        = new WP_Error();
-        $tax_data     = array();
-        $meta_data    = array();
-        $listing_data = array(
+        $error           = new WP_Error();
+        $tax_data        = array();
+        $meta_data       = array();
+        $api_file_fields = array();
+        $listing_data    = array(
             'post_type' => ATBDP_POST_TYPE
         );
 
@@ -611,7 +682,7 @@ class SubmissionController {
                 continue;
             }
 
-            if ( self::should_ignore_category_custom_field( $field ) ) {
+            if ( self::should_ignore_category_custom_field( $field ) || self::should_ignore_conditional_logic_field( $field, $posted_data ) ) {
                 continue;
             }
 
@@ -658,12 +729,16 @@ class SubmissionController {
 
             // Exception from the web version.
             if ( self::$from === 'api' && $field->type === 'file' ) {
-                $meta_data[ '_' . $field->get_key() ] = self::get_file_value( $field, $posted_data );
+                $api_file_fields[] = $field;
             }
         }
 
         if ( $error->has_errors() ) {
             return $error;
+        }
+
+        foreach ( $api_file_fields as $field ) {
+            $meta_data[ '_' . $field->get_key() ] = self::get_file_value( $field, $posted_data );
         }
 
         // Terms & conditions and privacy policy have been merged in v8.
@@ -705,7 +780,7 @@ class SubmissionController {
                 return $listing_id;
             }
 
-            self::reset_listing_taxonomy( $listing_id, $tax_data );
+            self::set_listing_taxonomy( $listing_id, $tax_data );
             directorist_set_listing_directory( $listing_id, $directory_id );
 
             // Clean empty meta data.
@@ -721,6 +796,7 @@ class SubmissionController {
                 return $listing_id;
             }
 
+            self::set_listing_taxonomy( $listing_id, $tax_data );
             directorist_set_listing_directory( $listing_id, $directory_id );
 
             do_action( 'atbdp_listing_inserted', $listing_id ); // for sending email notification
@@ -851,14 +927,27 @@ class SubmissionController {
                     continue;
                 }
 
+                $image = self::get_safe_submitted_filename( $image );
+                if ( ! $image ) {
+                    continue;
+                }
+
                 $filepath = $temp_dir . $image;
 
                 if ( is_dir( $filepath ) || ! file_exists( $filepath ) ) {
                     continue;
                 }
 
+                if ( ! self::is_path_inside_directory( $filepath, $temp_dir ) ) {
+                    continue;
+                }
+
                 if ( file_exists( $target_dir . $image ) ) {
                     $image = wp_unique_filename( $target_dir, $image );
+                }
+
+                if ( ! self::is_path_inside_directory( $target_dir, $upload_dir['basedir'] ) ) {
+                    continue;
                 }
 
                 rename( $filepath, $target_dir . $image );

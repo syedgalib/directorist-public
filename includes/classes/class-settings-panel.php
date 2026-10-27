@@ -149,14 +149,6 @@ if ( ! class_exists( 'ATBDP_Settings_Panel' ) ) {
                 'type'  => 'toggle',
                 'label' => 'Enable Multi Directory',
                 'value' => false,
-                'confirm-before-change' => true,
-                'confirmation-modal' => [
-                    'show-model-header' => false
-                ],
-                'data-on-change' => [
-                    'action' => 'updateData',
-                    'args'   => [ 'reload_after_save' => true ]
-                ],
                 'componets' => [
                     'link' => [
                         'label' => __( 'Start Building Directory', 'directorist' ),
@@ -1319,7 +1311,7 @@ Please remember that your order may be canceled if you do not make your payment 
                     // single listing settings
                     'disable_single_listing' => [
                         'type' => 'toggle',
-                        'label' => __( 'Disable Single Listing View' ),
+                        'label' => __( 'Disable Single Listing View', 'directorist' ),
                         'value' => false,
                     ],
                     'restrict_single_listing_for_logged_in_user' => [
@@ -1396,6 +1388,55 @@ Please remember that your order may be canceled if you do not make your payment 
                             ],
                         ],
                     ],
+                    'single_slider_columns' => [
+                        'label'       => __( 'Images per View (Default: 1)', 'directorist' ),
+                        'description' => __( 'Choose how many main slider images appear side by side on desktop.', 'directorist' ),
+                        'type'        => 'select',
+                        'value'       => '1',
+                        'show-if'     => [
+                            'where'      => 'dsiplay_slider_single_page',
+                            'conditions' => [
+                                ['key' => 'value', 'compare' => '=', 'value' => true],
+                            ],
+                        ],
+                        'options'     => [
+                            [
+                                'value' => '1',
+                                'label' => __( '1 Image', 'directorist' ),
+                            ],
+                            [
+                                'value' => '2',
+                                'label' => __( '2 Images', 'directorist' ),
+                            ],
+                            [
+                                'value' => '3',
+                                'label' => __( '3 Images', 'directorist' ),
+                            ],
+                        ],
+                    ],
+                    'single_slider_gap' => [
+                        'label'       => __( 'Image Gap (Default: 20px)', 'directorist' ),
+                        'description' => __( 'Set the space between main slider images.', 'directorist' ),
+                        'type'        => 'number',
+                        'value'       => '20',
+                        'min'         => '0',
+                        'max'         => '100',
+                        'step'        => '1',
+                        'show-if'     => [
+                            [
+                                'where'      => 'dsiplay_slider_single_page',
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '=', 'value' => true],
+                                ],
+                            ],
+                            [
+                                'where'      => 'single_slider_columns',
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '!=', 'value' => '1'],
+                                ],
+                            ],
+                        ],
+                    ],
                     'single_slider_background_type' => [
                         'label' => __( 'Slider Background Type', 'directorist' ),
                         'type'  => 'select',
@@ -1421,30 +1462,128 @@ Please remember that your order may be canceled if you do not make your payment 
                         'type' => 'color',
                         'label' => __( 'Background Color', 'directorist' ),
                         'show-if' => [
-                            'where' => "single_slider_background_type",
-                            'conditions' => [
-                                ['key' => 'value', 'compare' => '=', 'value' => 'custom-color'],
+                            [
+                                'where' => "single_slider_image_size",
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '=', 'value' => 'contain'],
+                                ],
+                            ],
+                            [
+                                'where' => "single_slider_background_type",
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '=', 'value' => 'custom-color'],
+                                ],
                             ],
                         ],
                         'value' => '#ffffff',
                     ],
 
-                    'gallery_crop_width' => [
-                        'label' => __( 'Image Width', 'directorist' ),
-                        'type'  => 'number',
-                        'value' => '740',
-                        'min' => '1',
-                        'max' => '1200',
-                        'step' => '1',
+                    'single_slider_show_thumbnails' => [
+                        'type'        => 'toggle',
+                        'label'       => __( 'Show Thumbnails', 'directorist' ),
+                        'description' => __( 'Show or hide the thumbnail navigation below the single listing slider.', 'directorist' ),
+                        'value'       => true,
+                        'show-if'     => [
+                            'where'      => 'dsiplay_slider_single_page',
+                            'conditions' => [
+                                ['key' => 'value', 'compare' => '=', 'value' => true],
+                            ],
+                        ],
+                    ],
+
+                    'single_slider_position' => [
+                        'label' => __( 'Slider Placement', 'directorist' ),
+                        'type'  => 'select',
+                        'value' => 'center',
                         'show-if' => [
                             'where' => "dsiplay_slider_single_page",
                             'conditions' => [
                                 ['key' => 'value', 'compare' => '=', 'value' => true],
                             ],
                         ],
+                        'options' => [
+                            [
+                                'value' => 'left',
+                                'label' => __( 'Left', 'directorist' ),
+                            ],
+                            [
+                                'value' => 'center',
+                                'label' => __( 'Center', 'directorist' ),
+                            ],
+                            [
+                                'value' => 'right',
+                                'label' => __( 'Right', 'directorist' ),
+                            ],
+                        ],
+                    ],
+                    'single_slider_width_unit' => [
+                        'label' => __( 'Width Unit', 'directorist' ),
+                        'type'  => 'select',
+                        'value' => 'px',
+                        'show-if' => [
+                            'where' => "dsiplay_slider_single_page",
+                            'conditions' => [
+                                ['key' => 'value', 'compare' => '=', 'value' => true],
+                            ],
+                        ],
+                        'options' => [
+                            [
+                                'value' => 'px',
+                                'label' => __( 'Pixel', 'directorist' ),
+                            ],
+                            [
+                                'value' => 'percentage',
+                                'label' => __( 'Percentage', 'directorist' ),
+                            ],
+                        ],
+                    ],
+
+                    'gallery_crop_width' => [
+                        'label' => __( 'Image Width (Default: 740px)', 'directorist' ),
+                        'type'  => 'number',
+                        'value' => '740',
+                        'min' => '1',
+                        'max' => '1200',
+                        'step' => '1',
+                        'show-if' => [
+                            [
+                                'where' => "dsiplay_slider_single_page",
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '=', 'value' => true],
+                                ],
+                            ],
+                            [
+                                'where' => "single_slider_width_unit",
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '=', 'value' => 'px'],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'gallery_crop_width_percentage' => [
+                        'label' => __( 'Image Width (Default: 100%)', 'directorist' ),
+                        'type'  => 'number',
+                        'value' => '100',
+                        'min' => '1',
+                        'max' => '100',
+                        'step' => '1',
+                        'show-if' => [
+                            [
+                                'where' => "dsiplay_slider_single_page",
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '=', 'value' => true],
+                                ],
+                            ],
+                            [
+                                'where' => "single_slider_width_unit",
+                                'conditions' => [
+                                    ['key' => 'value', 'compare' => '=', 'value' => 'percentage'],
+                                ],
+                            ],
+                        ],
                     ],
                     'gallery_crop_height' => [
-                        'label' => __( 'Image Height', 'directorist' ),
+                        'label' => __( 'Image Height (Default: 580px)', 'directorist' ),
                         'type'  => 'number',
                         'value' => '580',
                         'min' => '1',
@@ -1458,6 +1597,14 @@ Please remember that your order may be canceled if you do not make your payment 
                         ],
                     ],
                     // badge settings
+                    'directorist_badge_rules' => [
+                        'type'              => 'hidden',
+                        'label'             => __( 'Badge Rules', 'directorist' ),
+                        'value'             => '',
+                        'hidden'            => true,
+                        'input_type'        => 'hidden',
+                        'condition_sources' => $this->get_badge_rule_condition_sources(),
+                    ],
                     'badge_display_type' => [
                         'label'       => __( 'Badge Display Type', 'directorist' ),
                         'description' => __( 'Choose how badges should be displayed on listings', 'directorist' ),
@@ -1591,7 +1738,7 @@ Please remember that your order may be canceled if you do not make your payment 
                         'type'          => 'number',
                         'value'         => '4',
                         'min'           => '.5',
-                        'max'           => '4.5',
+                        'max'           => '5',
                         'step'          => '.5',
                     ],
 
@@ -3408,6 +3555,66 @@ Please remember that your order may be canceled if you do not make your payment 
                     ", 'directorist'
                         ),
                     ],
+                    'email_sub_new_listing_admin' => [
+                        'type'        => 'text',
+                        'label'       => __( 'Admin Email Subject', 'directorist' ),
+                        'value'       => __( '[==SITE_NAME==] A new listing has been submitted on your website', 'directorist' ),
+                    ],
+                    'email_tmpl_new_listing_admin' => [
+                        'type'        => 'textarea',
+                        'label'       => __( 'Admin Email Body', 'directorist' ),
+                        'value'       => ATBDP()->email->get_listing_submitted_admin_tmpl(),
+                    ],
+                    'email_sub_pub_listing_admin' => [
+                        'type'        => 'text',
+                        'label'       => __( 'Admin Email Subject', 'directorist' ),
+                        'value'       => __( '[==SITE_NAME==] The Listing #==LISTING_ID== has been published on your website', 'directorist' ),
+                    ],
+                    'email_tmpl_pub_listing_admin' => [
+                        'type'        => 'textarea',
+                        'label'       => __( 'Admin Email Body', 'directorist' ),
+                        'value'       => ATBDP()->email->get_listing_published_admin_tmpl(),
+                    ],
+                    'email_sub_edit_listing_admin' => [
+                        'type'        => 'text',
+                        'label'       => __( 'Admin Email Subject', 'directorist' ),
+                        'value'       => __( '[==SITE_NAME==] The Listing #==LISTING_ID== has been edited on your website', 'directorist' ),
+                    ],
+                    'email_tmpl_edit_listing_admin' => [
+                        'type'        => 'textarea',
+                        'label'       => __( 'Admin Email Body', 'directorist' ),
+                        'value'       => ATBDP()->email->get_listing_edited_admin_tmpl(),
+                    ],
+                    'email_sub_deleted_listing_admin' => [
+                        'type'        => 'text',
+                        'label'       => __( 'Admin Email Subject', 'directorist' ),
+                        'value'       => __( '[==SITE_NAME==] A Listing has been deleted [ID#: ==LISTING_ID==] on your website', 'directorist' ),
+                    ],
+                    'email_tmpl_deleted_listing_admin' => [
+                        'type'        => 'textarea',
+                        'label'       => __( 'Admin Email Body', 'directorist' ),
+                        'value'       => ATBDP()->email->get_listing_deleted_admin_tmpl(),
+                    ],
+                    'email_sub_new_order_admin' => [
+                        'type'        => 'text',
+                        'label'       => __( 'Admin Email Subject', 'directorist' ),
+                        'value'       => __( '[==SITE_NAME==] You have a new order #==ORDER_ID== on your website', 'directorist' ),
+                    ],
+                    'email_tmpl_new_order_admin' => [
+                        'type'        => 'textarea',
+                        'label'       => __( 'Admin Email Body', 'directorist' ),
+                        'value'       => ATBDP()->email->get_order_created_admin_tmpl(),
+                    ],
+                    'email_sub_completed_order_admin' => [
+                        'type'        => 'text',
+                        'label'       => __( 'Admin Email Subject', 'directorist' ),
+                        'value'       => __( '[==SITE_NAME==] Payment Notification : Order #==ORDER_ID== Completed', 'directorist' ),
+                    ],
+                    'email_tmpl_completed_order_admin' => [
+                        'type'        => 'textarea',
+                        'label'       => __( 'Admin Email Body', 'directorist' ),
+                        'value'       => ATBDP()->email->get_order_completed_admin_tmpl(),
+                    ],
                     'email_sub_rejected_listing' => [
                         'type'        => 'text',
                         'label'       => __( 'Email Subject', 'directorist' ),
@@ -3922,9 +4129,15 @@ Best regards,
                                                 'fields'      => [
                                                     'dsiplay_slider_single_page',
                                                     'single_slider_image_size',
+                                                    'single_slider_columns',
+                                                    'single_slider_gap',
                                                     'single_slider_background_type',
                                                     'single_slider_background_color',
+                                                    'single_slider_show_thumbnails',
+                                                    'single_slider_position',
+                                                    'single_slider_width_unit',
                                                     'gallery_crop_width',
+                                                    'gallery_crop_width_percentage',
                                                     'gallery_crop_height'
                                                 ],
                                             ],
@@ -3984,7 +4197,7 @@ Best regards,
                                                 'title'       => __( 'General', 'directorist' ),
                                                 'description' => '',
                                                 'fields'      => [
-                                                    'badge_display_type',
+                                                    'badge_display_type', 'directorist_badge_rules',
                                                 ],
                                             ],
                                             'new_badge' => [
@@ -4719,6 +4932,650 @@ Best regards,
             ];
         }
 
+        /**
+         * Get badge rule source metadata for the redesigned badge rule builder.
+         *
+         * @return array
+         */
+        private function get_badge_rule_condition_sources() {
+            return apply_filters(
+                'directorist_badge_rule_condition_sources',
+                [
+                    'general' => $this->get_badge_rule_general_condition_options(),
+                    'fields'  => $this->get_badge_rule_field_condition_options(),
+                    'pricing' => $this->get_badge_rule_pricing_plan_options(),
+                ]
+            );
+        }
+
+        /**
+         * Get core listing properties that can be used as badge rule conditions.
+         *
+         * @return array
+         */
+        private function get_badge_rule_general_condition_options() {
+            return apply_filters(
+                'directorist_badge_rule_general_condition_options',
+                [
+                    [
+                        'value'           => 'age_days',
+                        'label'           => __( 'Listing age (days)', 'directorist' ),
+                        'valueType'       => 'number',
+                        'defaultOperator' => '<=',
+                        'defaultValue'    => '3',
+                        'min'             => '0',
+                        'step'            => '1',
+                    ],
+                    [
+                        'value'           => 'view_count',
+                        'label'           => __( 'View count', 'directorist' ),
+                        'valueType'       => 'number',
+                        'defaultOperator' => '>=',
+                        'defaultValue'    => '5',
+                        'min'             => '0',
+                        'step'            => '1',
+                    ],
+                    [
+                        'value'           => 'average_rating',
+                        'label'           => __( 'Average rating', 'directorist' ),
+                        'valueType'       => 'number',
+                        'defaultOperator' => '>=',
+                        'defaultValue'    => '4',
+                        'min'             => '0',
+                        'max'             => '5',
+                        'step'            => '.5',
+                    ],
+                    [
+                        'value'           => 'review_count',
+                        'label'           => __( 'Review count', 'directorist' ),
+                        'valueType'       => 'number',
+                        'defaultOperator' => '>=',
+                        'defaultValue'    => '1',
+                        'min'             => '0',
+                        'step'            => '1',
+                    ],
+                    [
+                        'value'           => 'is_featured',
+                        'label'           => __( 'Is featured', 'directorist' ),
+                        'valueType'       => 'boolean',
+                        'defaultOperator' => 'is',
+                        'defaultValue'    => true,
+                    ],
+                ]
+            );
+        }
+
+        /**
+         * Get listing form fields that can be used as badge rule conditions.
+         *
+         * @return array
+         */
+        private function get_badge_rule_field_condition_options() {
+            if ( ! function_exists( 'directorist_get_directories' ) || ! function_exists( 'directorist_get_listing_form_fields' ) ) {
+                return [];
+            }
+
+            $directories = directorist_get_directories( [ 'hide_empty' => false ] );
+
+            if ( is_wp_error( $directories ) || empty( $directories ) ) {
+                return [];
+            }
+
+            $field_options = [];
+            $seen_fields   = [];
+
+            foreach ( $directories as $directory ) {
+                $form_fields = directorist_get_listing_form_fields( $directory->term_id );
+
+                if ( empty( $form_fields ) || ! is_array( $form_fields ) ) {
+                    continue;
+                }
+
+                foreach ( $form_fields as $widget_key => $field ) {
+                    if ( empty( $field['field_key'] ) || empty( $field['widget_name'] ) ) {
+                        continue;
+                    }
+
+                    if ( ! $this->badge_rule_field_type_is_supported( $field['widget_name'], $field ) ) {
+                        continue;
+                    }
+
+                    $field_key = $this->get_badge_rule_field_condition_key( $field, $widget_key );
+
+                    if ( empty( $field_key ) ) {
+                        continue;
+                    }
+
+                    $option_key = sprintf( 'dir_%d__%s', (int) $directory->term_id, $field_key );
+
+                    if ( isset( $seen_fields[ $option_key ] ) ) {
+                        continue;
+                    }
+
+                    $seen_fields[ $option_key ] = true;
+
+                    $field_options[] = [
+                        'value'         => $option_key,
+                        'label'         => $this->get_badge_rule_field_label( $field, $directory ),
+                        'fieldKey'      => $field_key,
+                        'fieldType'     => $field['widget_name'],
+                        'valueType'     => $this->get_badge_rule_field_value_type( $field['widget_name'], $field ),
+                        'defaultValue'  => $this->get_badge_rule_field_default_value( $field['widget_name'], $field ),
+                        'valueOptions'  => $this->get_badge_rule_field_value_options( $field, (int) $directory->term_id ),
+                        'directoryId'   => (string) $directory->term_id,
+                        'directoryName' => $directory->name,
+                    ];
+                }
+            }
+
+            return apply_filters( 'directorist_badge_rule_field_condition_options', $field_options );
+        }
+
+        /**
+         * Check whether a listing form field type is safe for badge rules.
+         *
+         * @param string $widget_name Field widget name.
+         * @return bool
+         */
+        private function badge_rule_field_type_is_supported( $widget_name, $field = [] ) {
+            if ( ! empty( $field['field_key'] ) && 'privacy_policy' === $field['field_key'] ) {
+                return true;
+            }
+
+            return in_array(
+                $widget_name,
+                [
+                    'title',
+                    'listing_title',
+                    'description',
+                    'listing_content',
+                    'tagline',
+                    'excerpt',
+                    'phone',
+                    'website',
+                    'address',
+                    'text',
+                    'textarea',
+                    'html',
+                    'number',
+                    'url',
+                    'email',
+                    'date',
+                    'time',
+                    'color',
+                    'color_picker',
+                    'select',
+                    'radio',
+                    'checkbox',
+                    'switch',
+                    'category',
+                    'tag',
+                    'location',
+                    'image_upload',
+                    'video',
+                    'map',
+                    'file',
+                    'file_upload',
+                    'button',
+                    'terms_privacy',
+                ],
+                true
+            );
+        }
+
+        /**
+         * Get the stable badge condition key for a listing form field.
+         *
+         * @param array  $field      Field config.
+         * @param string $widget_key Builder widget key.
+         * @return string
+         */
+        private function get_badge_rule_field_condition_key( $field, $widget_key = '' ) {
+            $field_key   = ! empty( $field['field_key'] ) ? (string) $field['field_key'] : (string) $widget_key;
+            $widget_name = ! empty( $field['widget_name'] ) ? (string) $field['widget_name'] : '';
+
+            $field_aliases = [
+                'admin_category_select[]'      => 'category',
+                'tax_input[at_biz_dir-tags][]' => 'tag',
+                'tax_input[at_biz_dir-location][]' => 'location',
+                'listing_img'                  => 'listing_img',
+                'videourl'                     => 'videourl',
+                'listing_title'                => 'listing_title',
+                'listing_content'              => 'listing_content',
+                'privacy_policy'               => 'privacy_policy',
+            ];
+
+            if ( isset( $field_aliases[ $field_key ] ) ) {
+                return $field_aliases[ $field_key ];
+            }
+
+            $widget_aliases = [
+                'category'     => 'category',
+                'tag'          => 'tag',
+                'location'     => 'location',
+                'image_upload' => 'listing_img',
+                'video'        => 'videourl',
+                'map'          => 'map',
+            ];
+
+            if ( isset( $widget_aliases[ $widget_name ] ) ) {
+                return $widget_aliases[ $widget_name ];
+            }
+
+            return sanitize_key( $field_key );
+        }
+
+        /**
+         * Get badge rule field label.
+         *
+         * @param array   $field Field config.
+         * @param WP_Term $directory Directory term.
+         * @return string
+         */
+        private function get_badge_rule_field_label( $field, $directory ) {
+            $label = ! empty( $field['label'] ) ? $field['label'] : $field['field_key'];
+            $label = wp_strip_all_tags( (string) $label );
+
+            return sprintf( '%s (%s)', $label, $directory->name );
+        }
+
+        /**
+         * Get badge rule field value type.
+         *
+         * @param string $widget_name Field widget name.
+         * @return string
+         */
+        private function get_badge_rule_field_value_type( $widget_name, $field = [] ) {
+            if ( ! empty( $field['field_key'] ) && 'privacy_policy' === $field['field_key'] ) {
+                return 'privacy';
+            }
+
+            if ( 'number' === $widget_name ) {
+                return 'number';
+            }
+
+            if ( 'switch' === $widget_name ) {
+                return 'boolean';
+            }
+
+            if ( in_array( $widget_name, [ 'select', 'radio', 'checkbox' ], true ) ) {
+                return $widget_name;
+            }
+
+            if ( in_array( $widget_name, [ 'category', 'tag', 'location' ], true ) ) {
+                return 'taxonomy';
+            }
+
+            if ( in_array( $widget_name, [ 'image_upload', 'video', 'file', 'file_upload' ], true ) ) {
+                return 'presence';
+            }
+
+            if ( 'map' === $widget_name ) {
+                return 'map';
+            }
+
+            if ( 'button' === $widget_name ) {
+                return 'button';
+            }
+
+            if ( in_array( $widget_name, [ 'date', 'time', 'color', 'color_picker' ], true ) ) {
+                return in_array( $widget_name, [ 'color', 'color_picker' ], true ) ? 'color' : $widget_name;
+            }
+
+            if ( 'html' === $widget_name ) {
+                return 'html_text';
+            }
+
+            return 'text';
+        }
+
+        /**
+         * Get badge rule field default value.
+         *
+         * @param string $widget_name Field widget name.
+         * @return mixed
+         */
+        private function get_badge_rule_field_default_value( $widget_name, $field = [] ) {
+            if ( ! empty( $field['field_key'] ) && 'privacy_policy' === $field['field_key'] ) {
+                return 'checked';
+            }
+
+            if ( 'number' === $widget_name ) {
+                return 0;
+            }
+
+            if ( 'switch' === $widget_name ) {
+                return true;
+            }
+
+            if ( in_array( $widget_name, [ 'image_upload', 'file', 'file_upload' ], true ) ) {
+                return 'uploaded';
+            }
+
+            if ( 'video' === $widget_name ) {
+                return 'provided';
+            }
+
+            if ( 'map' === $widget_name ) {
+                return 'pin_added';
+            }
+
+            if ( 'button' === $widget_name ) {
+                return 'complete';
+            }
+
+            return '';
+        }
+
+        /**
+         * Get select-style options for a listing field.
+         *
+         * @param array $field Field config.
+         * @return array
+         */
+        private function get_badge_rule_field_value_options( $field, $directory_id = 0 ) {
+            $widget_name = ! empty( $field['widget_name'] ) ? $field['widget_name'] : '';
+            $field_key   = ! empty( $field['field_key'] ) ? $field['field_key'] : '';
+
+            if ( 'privacy_policy' === $field_key ) {
+                return [
+                    [
+                        'value' => 'checked',
+                        'label' => __( 'Checked', 'directorist' ),
+                    ],
+                    [
+                        'value' => 'unchecked',
+                        'label' => __( 'Unchecked', 'directorist' ),
+                    ],
+                ];
+            }
+
+            if ( in_array( $widget_name, [ 'category', 'tag', 'location' ], true ) ) {
+                return $this->get_badge_rule_taxonomy_value_options( $widget_name, $directory_id );
+            }
+
+            if ( in_array( $widget_name, [ 'image_upload', 'file', 'file_upload' ], true ) ) {
+                return [
+                    [
+                        'value' => 'uploaded',
+                        'label' => __( 'Uploaded', 'directorist' ),
+                    ],
+                ];
+            }
+
+            if ( 'video' === $widget_name ) {
+                return [
+                    [
+                        'value' => 'provided',
+                        'label' => __( 'Provided', 'directorist' ),
+                    ],
+                ];
+            }
+
+            if ( 'map' === $widget_name ) {
+                return [
+                    [
+                        'value' => 'pin_added',
+                        'label' => __( 'Pin added', 'directorist' ),
+                    ],
+                    [
+                        'value' => 'map_hidden',
+                        'label' => __( 'Map hidden', 'directorist' ),
+                    ],
+                ];
+            }
+
+            if ( 'button' === $widget_name ) {
+                return [
+                    [
+                        'value' => 'button_text',
+                        'label' => __( 'Button text', 'directorist' ),
+                    ],
+                    [
+                        'value' => 'button_url',
+                        'label' => __( 'Button URL', 'directorist' ),
+                    ],
+                    [
+                        'value' => 'complete',
+                        'label' => __( 'Complete button', 'directorist' ),
+                    ],
+                ];
+            }
+
+            if ( empty( $field['options'] ) || ! is_array( $field['options'] ) ) {
+                return [];
+            }
+
+            $field_options = $field['options'];
+
+            if ( ! empty( $field_options['value']['options'] ) && is_array( $field_options['value']['options'] ) ) {
+                $field_options = $field_options['value']['options'];
+            } elseif ( ! empty( $field_options['options'] ) && is_array( $field_options['options'] ) ) {
+                $field_options = $field_options['options'];
+            }
+
+            $options = [];
+
+            foreach ( $field_options as $option ) {
+                if ( is_array( $option ) ) {
+                    if ( isset( $option['option_value'] ) ) {
+                        $value = $option['option_value'];
+                        $label = isset( $option['option_label'] ) ? $option['option_label'] : $value;
+                    } else {
+                        $value = isset( $option['value'] ) ? $option['value'] : ( isset( $option['label'] ) ? $option['label'] : '' );
+                        $label = isset( $option['label'] ) ? $option['label'] : $value;
+                    }
+                } else {
+                    $value = $option;
+                    $label = $option;
+                }
+
+                if ( '' === $value ) {
+                    continue;
+                }
+
+                $options[] = [
+                    'value' => (string) $value,
+                    'label' => wp_strip_all_tags( (string) $label ),
+                ];
+            }
+
+            return $options;
+        }
+
+        /**
+         * Get taxonomy options for badge field conditions.
+         *
+         * @param string $widget_name  Field widget name.
+         * @param int    $directory_id Directory term ID.
+         * @return array
+         */
+        private function get_badge_rule_taxonomy_value_options( $widget_name, $directory_id = 0 ) {
+            $taxonomy = '';
+
+            if ( 'category' === $widget_name ) {
+                $taxonomy = ATBDP_CATEGORY;
+            } elseif ( 'tag' === $widget_name ) {
+                $taxonomy = ATBDP_TAGS;
+            } elseif ( 'location' === $widget_name ) {
+                $taxonomy = ATBDP_LOCATION;
+            }
+
+            if ( empty( $taxonomy ) ) {
+                return [];
+            }
+
+            $terms = get_terms(
+                [
+                    'taxonomy'   => $taxonomy,
+                    'hide_empty' => false,
+                ]
+            );
+
+            if ( is_wp_error( $terms ) || empty( $terms ) ) {
+                return [];
+            }
+
+            $options = [];
+
+            foreach ( $terms as $term ) {
+                if ( in_array( $widget_name, [ 'category', 'location' ], true ) && $directory_id ) {
+                    $term_directory_types = get_term_meta( $term->term_id, '_directory_type', true );
+
+                    if ( is_array( $term_directory_types ) && ! in_array( (int) $directory_id, array_map( 'absint', $term_directory_types ), true ) ) {
+                        continue;
+                    }
+                }
+
+                $options[] = [
+                    'value' => 'tag' === $widget_name ? $term->name : (string) $term->term_id,
+                    'label' => $term->name,
+                ];
+            }
+
+            return $options;
+        }
+
+        /**
+         * Get pricing plans that can be used as badge rule conditions.
+         *
+         * @return array
+         */
+        private function get_badge_rule_pricing_plan_options() {
+            $plans = [];
+
+            if ( post_type_exists( 'atbdp_pricing_plans' ) ) {
+                $plans = array_merge( $plans, $this->get_badge_rule_plan_options_by_post_type( 'atbdp_pricing_plans' ) );
+            }
+
+            $plans = array_merge( $plans, $this->get_badge_rule_directorist_pricing_plan_options() );
+
+            if ( post_type_exists( 'product' ) ) {
+                $plans = array_merge( $plans, $this->get_badge_rule_woo_pricing_plan_options() );
+            }
+
+            return apply_filters( 'directorist_badge_rule_pricing_plan_options', $this->get_badge_rule_unique_plan_options( $plans ) );
+        }
+
+        /**
+         * Get v4 Directorist Pricing Plans options.
+         *
+         * @return array
+         */
+        private function get_badge_rule_directorist_pricing_plan_options() {
+            if ( ! function_exists( 'directorist_pricing_plan_repository' ) ) {
+                return [];
+            }
+
+            global $wpdb;
+
+            $table = $wpdb->prefix . 'directorist_plans';
+
+            if ( $table !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) ) {
+                return [];
+            }
+
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is constructed from the WP prefix and a known plugin table.
+            $plans = $wpdb->get_results( $wpdb->prepare( "SELECT id, title FROM {$table} WHERE is_published = %d ORDER BY sort_order ASC, title ASC LIMIT 100", 1 ), ARRAY_A );
+
+            if ( empty( $plans ) ) {
+                return [];
+            }
+
+            return array_map(
+                static function( $plan ) {
+                    return [
+                        'value' => (string) absint( $plan['id'] ),
+                        'label' => $plan['title'],
+                    ];
+                },
+                $plans
+            );
+        }
+
+        /**
+         * Get pricing plan options by post type.
+         *
+         * @param string $post_type Plan post type.
+         * @param array  $extra_args Extra query args.
+         * @return array
+         */
+        private function get_badge_rule_plan_options_by_post_type( $post_type, $extra_args = [] ) {
+            $query = new WP_Query(
+                array_merge(
+                    [
+                        'post_type'      => $post_type,
+                        'post_status'    => 'publish',
+                        'posts_per_page' => 100,
+                        'orderby'        => 'title',
+                        'order'          => 'ASC',
+                        'fields'         => 'ids',
+                    ],
+                    $extra_args
+                )
+            );
+
+            if ( empty( $query->posts ) ) {
+                return [];
+            }
+
+            return array_map(
+                static function( $plan_id ) {
+                    return [
+                        'value' => (string) $plan_id,
+                        'label' => get_the_title( $plan_id ),
+                    ];
+                },
+                $query->posts
+            );
+        }
+
+        /**
+         * Get WooCommerce pricing plan options.
+         *
+         * @return array
+         */
+        private function get_badge_rule_woo_pricing_plan_options() {
+            if ( ! taxonomy_exists( 'product_type' ) ) {
+                return [];
+            }
+
+            return $this->get_badge_rule_plan_options_by_post_type(
+                'product',
+                [
+                    'tax_query' => [
+                        [
+                            'taxonomy' => 'product_type',
+                            'field'    => 'slug',
+                            'terms'    => 'listing_pricing_plans',
+                        ],
+                    ],
+                ]
+            );
+        }
+
+        /**
+         * Remove duplicate plan options by value.
+         *
+         * @param array $plans Pricing plan options.
+         * @return array
+         */
+        private function get_badge_rule_unique_plan_options( $plans ) {
+            $options = [];
+            $seen    = [];
+
+            foreach ( $plans as $plan ) {
+                if ( empty( $plan['value'] ) || isset( $seen[ (string) $plan['value'] ] ) ) {
+                    continue;
+                }
+
+                $seen[ (string) $plan['value'] ] = true;
+                $options[]                       = $plan;
+            }
+
+            return $options;
+        }
+
         // add_menu_pages
         public function add_menu_pages() {
             add_submenu_page(
@@ -4746,7 +5603,9 @@ Best regards,
                     continue;
                 }
 
-                $this->fields[ $field_key ]['value'] = $atbdp_options[ $field_key ];
+                $this->fields[ $field_key ]['value'] = 'directorist_badge_rules' === $field_key
+                    ? Directorist\Helper::normalize_badge_rules_setting_value( $atbdp_options[ $field_key ] )
+                    : $atbdp_options[ $field_key ];
             }
 
             $settings_builder_data = [
@@ -4785,6 +5644,11 @@ Best regards,
             foreach ( $fields as $key => $field_args ) {
 
                 foreach ( $field_args as $field_args_key => $field_args_value ) {
+
+                    if ( 'directorist_badge_rules' === $key && in_array( $field_args_key, [ 'value', 'condition_sources' ], true ) ) {
+                        $fields[ $key ][ $field_args_key ] = $this->sanitize_badge_rules_field_arg_value( $field_args_value );
+                        continue;
+                    }
 
                     $type = isset( $field_args['type'] ) ? $field_args['type'] : 'text';
                     $fields[ $key ][ $field_args_key ] = $this->sanitize_field_arg_value( $field_args_key, $field_args_value, $type );
@@ -4825,6 +5689,42 @@ Best regards,
             }
 
             return directorist_clean_post( $field_args_value );
+        }
+
+        /**
+         * Sanitize badge rule admin payload while preserving operator tokens.
+         *
+         * @param mixed  $value Badge rule value or metadata.
+         * @param string $data_key Current nested data key.
+         * @return mixed
+         */
+        private function sanitize_badge_rules_field_arg_value( $value, $data_key = '' ) {
+            if ( is_array( $value ) ) {
+                foreach ( $value as $key => $item ) {
+                    $value[ $key ] = $this->sanitize_badge_rules_field_arg_value( $item, $key );
+                }
+
+                return $value;
+            }
+
+            if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) || null === $value ) {
+                return $value;
+            }
+
+            $value = directorist_clean_post( $value );
+
+            if ( in_array( $data_key, [ 'operator', 'defaultOperator', 'default_operator' ], true ) && is_string( $value ) ) {
+                return strtr(
+                    html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, get_bloginfo( 'charset' ) ),
+                    [
+                        '≤' => '<=',
+                        '≥' => '>=',
+                        '≠' => '!=',
+                    ]
+                );
+            }
+
+            return $value;
         }
 
         /**

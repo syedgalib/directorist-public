@@ -46,7 +46,7 @@ class Order_Controller extends Abstract_Controller {
                     'permission_callback' => [ $this, 'admin_permissions_check' ],
                     'args'                => [
                         'id'     => [
-                            'description'       => __( 'The order ID.' ),
+                            'description'       => __( 'The order ID.', 'directorist' ),
                             'type'              => 'integer',
                             'required'          => true,
                         ],
@@ -60,7 +60,7 @@ class Order_Controller extends Abstract_Controller {
                         $this->store_args(), 
                         [
                             'id'     => [
-                                'description'       => __( 'The order ID.' ),
+                                'description'       => __( 'The order ID.', 'directorist' ),
                                 'type'              => 'integer',
                                 'required'          => true,
                             ],
@@ -73,7 +73,7 @@ class Order_Controller extends Abstract_Controller {
                     'permission_callback' => [ $this, 'admin_permissions_check' ],
                     'args'                => [
                         'id'     => [
-                            'description'       => __( 'The order ID.' ),
+                            'description'       => __( 'The order ID.', 'directorist' ),
                             'type'              => 'integer',
                             'required'          => true,
                         ],
@@ -92,12 +92,12 @@ class Order_Controller extends Abstract_Controller {
                     'permission_callback' => [ $this, 'admin_permissions_check' ],
                     'args'                => [
                         'id'     => [
-                            'description'       => __( 'The order ID.' ),
+                            'description'       => __( 'The order ID.', 'directorist' ),
                             'type'              => 'integer',
                             'required'          => true,
                         ],
                         'status' => [
-                            'description'       => __( 'The status of the order.' ),
+                            'description'       => __( 'The status of the order.', 'directorist' ),
                             'type'              => 'string',
                             'enum'              => OrderStatus::all(),
                             'required'          => true,
@@ -117,6 +117,26 @@ class Order_Controller extends Abstract_Controller {
                     'callback'            => [ $this, 'index' ],
                     'permission_callback' => [ $this, 'auth_permissions_check' ],
                     'args'                => $this->index_args(),
+                ],
+            ]
+        );
+
+        register_rest_route(
+            $this->namespace,
+            '/' . $this->rest_base . '/(?P<id>[\d]+)/cancel',
+            [
+                [
+                    'methods'             => WP_REST_Server::CREATABLE,
+                    'callback'            => [ $this, 'cancel' ],
+                    'permission_callback' => [ $this, 'auth_permissions_check' ],
+                    'args'                => [
+                        'id' => [
+                            'description'       => __( 'The order ID.', 'directorist' ),
+                            'type'              => 'integer',
+                            'sanitize_callback' => 'absint',
+                            'required'          => true,
+                        ],
+                    ],
                 ],
             ]
         );
@@ -156,7 +176,7 @@ class Order_Controller extends Abstract_Controller {
 
         return rest_ensure_response(
             [
-                "message" => esc_html__( "Order was created successfully" ),
+                "message" => esc_html__( "Order was created successfully", 'directorist' ),
                 "data"    => [
                     "id" => $id
                 ]
@@ -169,7 +189,7 @@ class Order_Controller extends Abstract_Controller {
         $order      = $repository->single( $request->get_param( "id" ) );
 
         if ( ! $order ) {
-            return new WP_Error( 'rest_not_found', __( 'The order was not found' ) );
+            return new WP_Error( 'rest_not_found', __( 'The order was not found', 'directorist' ) );
         }
 
         return rest_ensure_response(
@@ -189,7 +209,7 @@ class Order_Controller extends Abstract_Controller {
 
         return rest_ensure_response(
             [
-                "message" => esc_html__( "Order was updated successfully" )
+                "message" => esc_html__( "Order was updated successfully", 'directorist' )
             ]
         );
     }
@@ -199,7 +219,7 @@ class Order_Controller extends Abstract_Controller {
 
         return rest_ensure_response(
             [
-                "message" => esc_html__( "Order was deleted successfully" )
+                "message" => esc_html__( "Order was deleted successfully", 'directorist' )
             ]
         );
     }
@@ -209,7 +229,7 @@ class Order_Controller extends Abstract_Controller {
         $old_item   = $repository->get_by_id( $request->get_param( "id" ) );
 
         if ( ! $old_item ) {
-            return new WP_Error( 'rest_not_found', __( 'The order was not found' ) );
+            return new WP_Error( 'rest_not_found', __( 'The order was not found', 'directorist' ) );
         }
 
         $dto = $repository->to_dto( $old_item );
@@ -219,24 +239,52 @@ class Order_Controller extends Abstract_Controller {
         $repository->update( $dto );
 
         return rest_ensure_response( [
-            'message' => esc_html__("Status updated successfully")
+            'message' => esc_html__("Status updated successfully", 'directorist')
         ] );
+    }
+
+    public function cancel( WP_REST_Request $request ) {
+        $repository = directorist_order_repository();
+        $order      = $repository->get_by_id( $request->get_param( 'id' ) );
+
+        if ( ! $order ) {
+            return new WP_Error( 'rest_not_found', __( 'The order was not found', 'directorist' ), [ 'status' => 404 ] );
+        }
+
+        if ( (int) $order->user_id !== get_current_user_id() ) {
+            return new WP_Error( 'rest_forbidden', __( 'You are not authorized to cancel this order.', 'directorist' ), [ 'status' => 403 ] );
+        }
+
+        if ( OrderStatus::PENDING !== $order->status ) {
+            return new WP_Error( 'rest_invalid_status', __( 'Only pending orders can be cancelled.', 'directorist' ), [ 'status' => 400 ] );
+        }
+
+        $dto = $repository->to_dto( $order );
+        $dto->set_status( OrderStatus::CANCELLED );
+
+        $repository->update( $dto );
+
+        return rest_ensure_response(
+            [
+                'message' => esc_html__( 'Order was cancelled successfully', 'directorist' ),
+            ]
+        );
     }
 
     protected function store_args(): array {
         return [
             'user_id' => [
-                'description'       => __( 'The user ID.' ),
+                'description'       => __( 'The user ID.', 'directorist' ),
                 'type'              => 'integer',
                 'required'          => true,
             ],
             'listing_id' => [
-                'description'       => __( 'The listing ID.' ),
+                'description'       => __( 'The listing ID.', 'directorist' ),
                 'type'              => 'integer',
                 'required'          => false,
             ],
             'status' => [
-                'description'       => __( 'The status of the order.' ),
+                'description'       => __( 'The status of the order.', 'directorist' ),
                 'type'              => 'string',
                 'required'          => true,
                 'enum'              => OrderStatus::all(),
@@ -247,21 +295,21 @@ class Order_Controller extends Abstract_Controller {
     protected function index_args(): array {
         return [
             'page'     => [
-                'description'       => __( 'The page number.' ),
+                'description'       => __( 'The page number.', 'directorist' ),
                 'type'              => 'integer',
                 'sanitize_callback' => 'absint',
                 'default'           => 1,
                 'required'          => false,
             ],
             'perPage'     => [
-                'description'       => __( 'The number of items per page.' ),
+                'description'       => __( 'The number of items per page.', 'directorist' ),
                 'type'              => 'integer',
                 'sanitize_callback' => 'absint',
                 'default'           => 10,
                 'required'          => false,
             ],
             'search'     => [
-                'description'       => __( 'The search query.' ),
+                'description'       => __( 'The search query.', 'directorist' ),
                 'type'              => 'string',
                 'sanitize_callback' => 'sanitize_text_field',
                 'required'          => false,

@@ -1,6 +1,6 @@
 # Settings Option Catalog
 
-Last reviewed: 2026-06-04
+Last reviewed: 2026-09-04
 
 Source of truth reviewed:
 
@@ -29,7 +29,7 @@ Redesigned UI note (2026-06-08): Core listing display settings are no longer rou
 
 ### General
 
-- `enable_multi_directory`: enables multi-directory mode and exposes directory type workflows.
+- `enable_multi_directory`: enables multi-directory mode and exposes directory type workflows. The toggle changes directly without a confirmation modal and persists only through the standard `Save changes` action; it does not automatically save or reload the settings page.
 - `guest_listings`: allows listing submission by non-logged-in visitors.
 - `guest_email_label`, `guest_email_placeholder`: customize guest email field copy on listing submission.
 - `new_user_registration`: controls whether registration is enabled from Directorist flows.
@@ -74,8 +74,17 @@ Redesigned UI note (2026-06-08): Core listing display settings are no longer rou
 - `pending_confirmation_msg`, `publish_confirmation_msg`: confirmation messages for pending and published submissions.
 - `dsiplay_slider_single_page`: toggles image slider on single listing pages.
 - `single_slider_image_size`: image size for single listing slider.
-- `single_slider_background_type`, `single_slider_background_color`: slider background behavior.
-- `gallery_crop_width`, `gallery_crop_height`: gallery image crop dimensions.
+- `single_slider_columns`: number of main slider images shown side by side; accepts `1–3` and defaults to `1` when unset or invalid. Mobile remains one image per view and tablet is capped at two.
+- `single_slider_gap`: space between main slider images; accepts `0–100` pixels, defaults to `20` when unset or invalid, and applies only when more than one image is shown per view.
+- `single_slider_background_type`, `single_slider_background_color`: slider background behavior. The color field is shown only when Image fit is `contain` and Background type is `custom-color`.
+- `single_slider_show_thumbnails`: show or hide thumbnail navigation below the slider; defaults to enabled for backward compatibility.
+- `single_slider_position`: horizontal slider and thumbnail placement (`left`, `center`, or `right`); defaults to `center` when unsaved or invalid.
+- `single_slider_width_unit`: switches slider width between the existing pixel value and a percentage value; defaults to `px` for backward compatibility.
+- `gallery_crop_width`: pixel slider width; default `740`, range `1–1200`.
+- `gallery_crop_width_percentage`: percentage slider width relative to the listing content container; default `100`, range `1–100`.
+- `gallery_crop_height`: pixel slider height; default `580`, range `1–1200`.
+
+Redesigned UI note (2026-09-04): The `Directory > Single listing > Slider image` card presents width, height, and unit together in a directly visible compact `Container` row that reuses the Preview image grouping pattern. Pixel and percentage width keep their separate saved keys but occupy the same conditional Width slot. Additional controls for Images per view, Image gap, thumbnail visibility, and slider placement are grouped in the card's nested `Advanced` disclosure. Image gap appears only when Images per view is greater than `1`. Images per view defaults to the legacy single-image layout, gap defaults to `20px`, pixel remains the default width mode, existing installations continue to read `gallery_crop_width`, and percentage mode uses its own value so an existing pixel width is never reinterpreted as a percentage. The resolved value is emitted as the scoped `--gallery-crop-width` CSS custom property with its selected unit; no option migration or backfill is required.
 
 ### Category And Location
 
@@ -103,9 +112,12 @@ Redesigned UI note (2026-06-08): Core listing display settings are no longer rou
 ### Badges
 
 - `badge_display_type`: controls how badges are displayed.
+- `directorist_badge_rules`: hidden badge rule store for core and custom badge definitions, including internal name, visible label, type/icon, `typeEdited`, `iconEdited`, background/text-or-icon/border colors, icon-badge tooltip overrides in `hover.text`, `hover.bg`, and `hover.textColor`, General/Field/Pricing plan conditions, and match mode. Empty or invalid core conditions fall back to legacy badge checks; custom badges with empty conditions show wherever their builder widget is placed, while invalid custom conditions fail closed. Custom badges are additive and exposed as builder widgets only after they are saved.
 - `new_badge_text`, `new_listing_day`, `new_back_color`: new badge label, age threshold, and color.
 - `popular_badge_text`, `listing_popular_by`, `views_for_popular`, `average_review_for_popular`, `popular_back_color`: popular badge label, popularity rule, thresholds, and color.
 - `feature_badge_text`, `featured_back_color`: featured badge label and color.
+
+Redesigned UI note: Appearance > Badges uses a custom Vue badge manager with Reset defaults and Add badge. Core badge internal names affect admin/builder labels only; core visible labels and background colors still mirror the legacy options. Core default icons remain `la la-bolt`, `la la-fire`, and `la la-star-o`; saved icon changes update the builder widget icon class and text badge frontend output when present. Builder chips keep the old neutral builder UI and do not inherit badge colors or icon-only badge presentation. Frontend archive, single, and legacy badge output should visually match the Appearance preview chip tokens. Removing a text badge icon saves an intentionally empty icon and renders label-only; icon-only badges restore their default icon if empty and can use optional tooltip text/background/text-color overrides. Delete applies only to custom badges, and Reset defaults removes custom badges without requiring a migration.
 
 ### Review
 
@@ -256,6 +268,13 @@ Redesigned UI note: Notifications renders as `Channels` plus merged `Events & Te
 - `email_note`: placeholder note shown in template settings.
 - `email_sub_new_listing`, `email_tmpl_new_listing`: new listing email subject/body.
 - `email_sub_pub_listing`, `email_tmpl_pub_listing`: approved/published listing subject/body.
+- `email_sub_new_listing_admin`, `email_tmpl_new_listing_admin`: admin listing-submitted subject/body; default to the legacy admin email. Read by `ATBDP_Email::notify_admin_listing_submitted()`.
+- `email_sub_pub_listing_admin`, `email_tmpl_pub_listing_admin`: admin listing-published subject/body; default to the legacy admin email. Read by `ATBDP_Email::notify_admin_listing_published()`.
+- `email_sub_edit_listing_admin`, `email_tmpl_edit_listing_admin`: admin listing-edited subject/body; default to the legacy admin email. Read by `ATBDP_Email::notify_admin_listing_edited()`.
+- `email_sub_deleted_listing_admin`, `email_tmpl_deleted_listing_admin`: admin listing-deleted subject/body; default to the legacy admin email. Read by `ATBDP_Email::notify_admin_listing_deleted()`.
+- `email_sub_new_order_admin`, `email_tmpl_new_order_admin`: admin order-created subject/body; default to the legacy admin email. Read by `ATBDP_Email::notify_admin_order_created()`.
+- `email_sub_completed_order_admin`, `email_tmpl_completed_order_admin`: admin order-completed subject/body; default to the legacy admin email. Read by `ATBDP_Email::notify_admin_order_completed()`.
+  These admin values are stored in `atbdp_option` through the existing settings save handler and use its existing text-field sanitization. The listing-owner option keys remain independent; existing owner values are not copied into the new admin fields.
 - `email_sub_rejected_listing`, `email_tmpl_rejected_listing`: rejected listing subject/body.
 - `email_sub_edit_listing`, `email_tmpl_edit_listing`: edited listing subject/body.
 - `email_sub_to_expire_listing`, `email_tmpl_to_expire_listing`: about-to-expire listing subject/body.
@@ -302,7 +321,13 @@ Redesigned UI note (2026-06-08): `Monetization > Currency` shows a presentation-
 
 Bank Transfer is the built-in offline gateway in core Directorist settings. It is not extension-only. Other gateways may be extension-provided and can extend `active_gateways`, `default_gateway`, and related gateway settings through filters or extension code.
 
+Dashboard setup checklist (2026-10-08): only registered gateways selected in `active_gateways` count toward the payment step. `default_gateway` can retain Bank Transfer after its payment-method toggle is disabled; it controls checkout preselection and does not activate the gateway. The checklist is complete when at least one gateway is active, even if its credentials still need review, and remains incomplete when the active list is empty.
+
 Redesigned UI note (2026-06-10): payment gateway extension submenus registered through `atbdp_monetization_settings_submenu`, such as `Authorize.net Gateway` and `Paypal`, render under the existing `Monetization` sidebar menu as additional tabs after `Payment gateways`. They preserve the extension-provided labels, sections, fields, show-if behavior, and saved option keys. They must not be routed to `Needs Design` or generic `Extensions` simply because they are extension-owned.
+
+Stripe and PayPal extension visibility (verified 2026-10-07): `stripe_gateway_test_mode` and `paypal_gateway_test_mode` select the visible credential/webhook environment in their respective settings tabs. Off shows only that gateway's live credential and live webhook fields; on shows only its test/sandbox credential and webhook fields. Gateway title and description stay visible in both modes. Hidden environment values and saved webhook IDs remain stored; switching modes does not disconnect them. The mode change is persisted only after Save changes.
+
+Webhook credential locking is opt-in (verified 2026-10-07): Core locks a saved webhook's matching Stripe/PayPal credential fields only when that extension's webhook field declares `'async-action' => true`. Older extension versions without this field metadata keep the legacy redirect button and editable credentials after a Core-only update. The guard reads field metadata and does not change option keys or saved webhook IDs.
 
 ## Personalization
 
@@ -327,7 +352,7 @@ Current redesign behavior (2026-06-08): the core `Extensions` menu renders `exte
 - Card header: `Extensions`.
 - Empty state: `Installed extensions` with `No extensions installed yet. Each extension you install will add its own section here.`
 - Browse row: `Browse extensions` with `30+ extensions available including PayPal, Stripe, Live Chat, Universal Search, Booking, and Pricing Plans.`
-- Action: `View directory`, linking to the existing Directorist extensions admin page. This is presentation-only and does not add extension-specific settings.
+- Action: `View directory`, linking to the current site's Directorist Themes & Extensions Add-ons view through `admin_url( 'edit.php?post_type=at_biz_dir&page=atbdp-extension&te_view=addons' )`. This is presentation-only and does not add extension-specific settings.
 
 Current redesign behavior (2026-06-09): runtime extension settings registered through `atbdp_extension_settings_submenu` now render under the redesigned `Extensions` menu using the extension-provided submenu label, for example `Booking`, `Pricing Plans`, or `Social Login` when those extensions are active. The redesign preserves each extension's existing section/field definitions and save keys. These extension-owned fields should not be routed to `Needs Design` simply because they are not core mockup fields. The canonical core layout key is `extension_settings`; `extensions_settings` remains only as a compatibility hash alias.
 

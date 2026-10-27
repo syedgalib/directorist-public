@@ -314,6 +314,33 @@ const EVENT_TEMPLATE_MAP = {
   },
 };
 
+const ADMIN_EVENT_TEMPLATE_MAP = {
+  listing_submitted: {
+    subject: "email_sub_new_listing_admin",
+    body: "email_tmpl_new_listing_admin",
+  },
+  listing_published: {
+    subject: "email_sub_pub_listing_admin",
+    body: "email_tmpl_pub_listing_admin",
+  },
+  listing_edited: {
+    subject: "email_sub_edit_listing_admin",
+    body: "email_tmpl_edit_listing_admin",
+  },
+  listing_deleted: {
+    subject: "email_sub_deleted_listing_admin",
+    body: "email_tmpl_deleted_listing_admin",
+  },
+  order_created: {
+    subject: "email_sub_new_order_admin",
+    body: "email_tmpl_new_order_admin",
+  },
+  order_completed: {
+    subject: "email_sub_completed_order_admin",
+    body: "email_tmpl_completed_order_admin",
+  },
+};
+
 const ADMIN_EVENTS = [
   ["order_created", "Order created", "A new order has been placed"],
   ["order_completed", "Order completed", "An order has been fulfilled"],
@@ -500,6 +527,16 @@ export default {
     },
 
     modalPlaceholders() {
+      const eventPlaceholders = this.modalEvent?.placeholders || [];
+
+      if (eventPlaceholders.length) {
+        return [...new Set(eventPlaceholders)];
+      }
+
+      if (this.modalEvent && this.modalEvent.templateOnly) {
+        return [];
+      }
+
       const placeholders = [...this.placeholders];
 
       Object.keys(this.modalDraft).forEach((fieldKey) => {
@@ -671,8 +708,11 @@ export default {
         : this.backupValueForField(fieldKey);
     },
 
-    templateForEvent(eventKey) {
-      const template = EVENT_TEMPLATE_MAP[eventKey];
+    templateForEvent(eventKey, recipient) {
+      const template =
+        recipient === "admin"
+          ? ADMIN_EVENT_TEMPLATE_MAP[eventKey] || EVENT_TEMPLATE_MAP[eventKey]
+          : EVENT_TEMPLATE_MAP[eventKey];
 
       if (!template || !this.templateExists(template)) {
         return null;
@@ -762,10 +802,32 @@ export default {
         label: this.cleanExtensionTemplateLabel(section.title || sectionKey),
         description: section.description || "",
         template,
+        placeholders: this.getExtensionTemplatePlaceholders(section, template),
         webPushTemplate: null,
         alwaysOn: false,
         templateOnly: true,
       };
+    },
+
+    getExtensionTemplatePlaceholders(section, template) {
+      const placeholders = [
+        ...this.normalizePlaceholders(section.placeholders),
+        ...this.normalizePlaceholders(section.template_placeholders),
+      ];
+
+      if (template) {
+        [template.subject, template.body].forEach((fieldKey) => {
+          const field = this.fields[fieldKey] || {};
+
+          placeholders.push(
+            ...this.normalizePlaceholders(field.placeholders),
+            ...this.normalizePlaceholders(field.supported_placeholders),
+            ...this.normalizePlaceholders(field.supportedPlaceholders)
+          );
+        });
+      }
+
+      return [...new Set(placeholders)];
     },
 
     getTemplatePairFromFields(fieldKeys) {
@@ -841,7 +903,7 @@ export default {
             webPushFieldKey: hasWebPush ? webPushFieldKey : "",
             label,
             description,
-            template: this.templateForEvent(value),
+            template: this.templateForEvent(value, recipient),
             webPushTemplate: hasWebPush
               ? this.webPushTemplateForEvent(value, recipient)
               : null,
@@ -866,6 +928,30 @@ export default {
           templateOnly: false,
         })
       );
+    },
+
+    eventTemplatePlaceholders(event) {
+      if (!event) {
+        return [];
+      }
+
+      if (event.placeholders && event.placeholders.length) {
+        return event.placeholders;
+      }
+
+      if (event.templateOnly) {
+        return [];
+      }
+
+      return this.eventFieldKeys(event).flatMap((fieldKey) => {
+        const field = this.fields[fieldKey] || {};
+
+        return [
+          field.description,
+          field.value,
+          field.placeholder,
+        ].flatMap((value) => this.extractPlaceholders(value));
+      });
     },
 
     eventRowClass(event) {
@@ -1058,9 +1144,35 @@ export default {
     },
 
     extractPlaceholders(value) {
-      const matches = String(value || "").match(/==[A-Z0-9_]+==/g);
+      const matches = String(value || "").match(
+        /==[A-Z0-9_]+==|{{\s*[a-zA-Z0-9_]+\s*}}/g
+      );
 
       return matches || [];
+    },
+
+    normalizePlaceholders(value) {
+      if (!value) {
+        return [];
+      }
+
+      if (Array.isArray(value)) {
+        return value.flatMap((item) => this.normalizePlaceholders(item));
+      }
+
+      if (typeof value === "object") {
+        return Object.values(value).flatMap((item) =>
+          this.normalizePlaceholders(item)
+        );
+      }
+
+      const placeholder = String(value || "").trim();
+
+      if (!placeholder) {
+        return [];
+      }
+
+      return [placeholder];
     },
 
     insertPlaceholder(placeholder) {

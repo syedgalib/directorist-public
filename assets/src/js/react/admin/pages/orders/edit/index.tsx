@@ -176,7 +176,7 @@ export default function OrderEdit({}: EditProps) {
 	const orderId = useGetId();
 
 	const singleOrderRoute = useMemo(
-		() => (orderId ? `/directorist/v1/admin/orders/${orderId}` : ''),
+		() => (orderId ? `/directorist/v2/admin/orders/${orderId}` : ''),
 		[orderId]
 	);
 
@@ -228,7 +228,7 @@ export default function OrderEdit({}: EditProps) {
 
 		try {
 			await apiFetch({
-				path: `directorist/v1/admin/orders/${orderId}/status`,
+				path: `directorist/v2/admin/orders/${orderId}/status`,
 				method: 'POST',
 				data: {
 					status: orderStatus,
@@ -237,7 +237,7 @@ export default function OrderEdit({}: EditProps) {
 			doAction('wpmvc-toast', {
 				message: __(
 					'Order status updated successfully',
-					'directorist-pricing-plans'
+					'directorist'
 				),
 			});
 			refresh();
@@ -247,7 +247,7 @@ export default function OrderEdit({}: EditProps) {
 				type: 'error',
 				message: __(
 					'Oppps! Something went wrong',
-					'directorist-pricing-plans'
+					'directorist'
 				),
 			});
 		} finally {

@@ -1756,19 +1756,18 @@ function atbdp_get_remove_favourites_page_link( $listing_id ) {
 
 if ( ! function_exists( 'new_badge' ) ) {
     function new_badge() {
-        global $post;
-        $new_listing_time = get_directorist_option( 'new_listing_day' );
-        $new_badge_text = get_directorist_option( 'new_badge_text', 'New' );
-        $each_hours = 60 * 60 * 24; // seconds in a day
-        $s_date1 = strtotime( current_time( 'mysql' ) ); // seconds for date 1
-        $s_date2 = strtotime( $post->post_date ); // seconds for date 2
-        $s_date_diff = abs( $s_date1 - $s_date2 ); // different of the two dates in seconds
-        $days = round( $s_date_diff / $each_hours ); // divided the different with second in a day
-        $new = '<span class="atbd_badge atbd_badge_new">' . $new_badge_text . '</span>';
-        if ( $days <= (int) $new_listing_time ) {
-             return $new;
-
+        if ( ! \Directorist\Helper::display_badge( get_the_ID(), 'new' ) ) {
+            return;
         }
+
+        $badge      = \Directorist\Helper::badge_definition( 'new' );
+        $style_attr = \Directorist\Helper::badge_style_attr( $badge );
+
+        return sprintf(
+            '<span class="atbd_badge atbd_badge_new"%1$s>%2$s</span>',
+            $style_attr ? ' style="' . esc_attr( $style_attr ) . '"' : '',
+            esc_html( $badge['label'] )
+        );
     }
 }
 
@@ -2918,7 +2917,7 @@ function directorist_redirect_to_admin_setup_wizard() {
     // Delete the redirect transient
     delete_transient( '_directorist_setup_page_redirect' );
 
-    wp_safe_redirect( add_query_arg( [ 'page' => 'directorist-setup' ], admin_url( 'index.php' ) ) );
+    wp_safe_redirect( add_query_arg( [ 'page' => 'directorist-ai-setup' ], admin_url( 'admin.php' ) ) );
     exit;
 }
 
@@ -3269,6 +3268,11 @@ function directorist_get_registration_error_message( $error_code ) {
         '6' => __( 'Email is not valid.', 'directorist' ),
         '7' => __( 'Spaces are not allowed in usernames.', 'directorist' ),
         '8' => __( 'Please make sure you selected the user type.', 'directorist' ),
+        '9' => __( 'Username too long. A maximum of 60 characters is allowed.', 'directorist' ),
+        '10' => __( 'A verification request is already pending. Please check your email or use the resend link.', 'directorist' ),
+        '11' => __( 'Too many registration requests. Please try again in one hour.', 'directorist' ),
+        '12' => __( 'The verification email could not be sent. Please try again later.', 'directorist' ),
+        '13' => __( 'The username you entered is not valid.', 'directorist' ),
     ];
 
     $messages = apply_filters( 'directorist_registration_error_messages', $messages, $error_code );
@@ -4239,6 +4243,34 @@ function directorist_sanitize_term_item( $item ) {
 }
 
 /**
+ * Check submitted tag names for markup, including nested HTML entities.
+ *
+ * Decode only for validation so legitimate term names are not renamed.
+ *
+ * @param string|int|float $name Tag name or term ID.
+ * @return bool Whether the name contains only text.
+ */
+function directorist_is_valid_tag_name( $name ) {
+    if ( ! is_scalar( $name ) ) {
+        return false;
+    }
+
+    $name = (string) $name;
+
+    // Bound decoding work for excessively nested, untrusted entity sequences.
+    for ( $depth = 0; $depth < 5; ++$depth ) {
+        $previous = $name;
+        $name     = html_entity_decode( $name, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+
+        if ( $name === $previous ) {
+            return wp_strip_all_tags( $name ) === trim( $name );
+        }
+    }
+
+    return false;
+}
+
+/**
  * @param mixed $item
  * @return mixed item
  */
@@ -4296,8 +4328,6 @@ function directorist_generate_password_reset_pin_code( $user ) {
 }
 
 function directorist_check_password_reset_pin_code( $user, $pin_code ) {
-    global $wp_hasher;
-
     $tail_code = directorist_get_password_reset_code_transient( $user );
 
     if ( empty( $tail_code ) ) {
@@ -4321,17 +4351,7 @@ function directorist_check_password_reset_pin_code( $user, $pin_code ) {
 
     $reset_key_hash = $reset_data['reset_hash'];
 
-    /*
-     * If the stored hash is longer than an MD5,
-     * presume the new style phpass portable hash.
-     */
-    if ( empty( $wp_hasher ) ) {
-        require_once ABSPATH . WPINC . '/class-phpass.php';
-        // By default, use the portable hash from phpass.
-        $wp_hasher = new PasswordHash( 8, true );
-    }
-
-    if ( ! $wp_hasher->CheckPassword( $reset_key, $reset_key_hash ) ) {
+    if ( ! wp_check_password( $reset_key, $reset_key_hash ) ) {
         $reset_attempt = absint( $reset_data['reset_attempt'] ) - 1;
 
         if ( $reset_attempt < 0 ) {
@@ -4641,10 +4661,6 @@ function directorist_filter_listing_empty_metadata( $meta_data ) {
                 return false;
             }
 
-            if ( is_numeric( $value ) && $value == 0 ) {
-                return false;
-            }
-
             return true;
         }, ARRAY_FILTER_USE_BOTH
     );
@@ -4903,6 +4919,49 @@ function directorist_is_guest_user( $user_id = 0 ) {
     return ( 'guest' === $user_type );
 }
 
+/**
+ * Get a normalized contact for a registered or anonymous user.
+ *
+ * Extensions can use the fallback values for flows that do not require a
+ * WordPress account, such as guest checkout or booking.
+ *
+ * @since 8.9.4
+ *
+ * @param int|WP_User $user     User ID or user object.
+ * @param array       $fallback Optional anonymous contact data.
+ * @return array{id: int, email: string, name: string} Normalized contact data.
+ */
+function directorist_get_user_contact( $user = 0, $fallback = [] ) {
+    $fallback = wp_parse_args(
+        $fallback,
+        [
+            'email' => '',
+            'name'  => '',
+        ]
+    );
+
+    if ( ! $user instanceof WP_User ) {
+        $user = get_userdata( absint( $user ) );
+    }
+
+    $contact = [
+        'id'    => $user ? (int) $user->ID : 0,
+        'email' => $user ? sanitize_email( $user->user_email ) : sanitize_email( $fallback['email'] ),
+        'name'  => $user ? sanitize_text_field( $user->display_name ) : sanitize_text_field( $fallback['name'] ),
+    ];
+
+    /**
+     * Filters normalized contact data for registered and anonymous users.
+     *
+     * @since 8.9.4
+     *
+     * @param array        $contact  Normalized contact data.
+     * @param WP_User|false $user     Resolved WordPress user, or false.
+     * @param array        $fallback Anonymous fallback values.
+     */
+    return apply_filters( 'directorist_user_contact', $contact, $user, $fallback );
+}
+
 function directorist_renewal_token_hash( $listing_id, $user_id ) {
     $token_str = 'cB0XtpVzGb180dgPi3hADW-' . $listing_id . '::' . $user_id;
     return wp_hash( $token_str, 'nonce' );
@@ -5020,6 +5079,46 @@ function directorist_single_listings_contents( int $directory_type_id, array $da
 function directorist_listing_archive_fields( int $directory_type_id, array $data = [] ): array {
     $card_fields = get_term_meta( $directory_type_id, 'listings_card_grid_view', true );
     $list_fields = get_term_meta( $directory_type_id, 'listings_card_list_view', true );
+
+    $is_valid_layout = static function ( $layout, $view ) {
+        if ( ! is_array( $layout ) || empty( $layout['active_template'] ) || empty( $layout['template_data'] ) || ! is_array( $layout['template_data'] ) ) {
+            return false;
+        }
+
+        $template          = $layout['active_template'];
+        $allowed_templates = [
+            'grid' => [ 'grid_view_with_thumbnail', 'grid_view_without_thumbnail' ],
+            'list' => [ 'list_view_with_thumbnail', 'list_view_without_thumbnail' ],
+        ];
+
+        return isset( $allowed_templates[ $view ] )
+            && in_array( $template, $allowed_templates[ $view ], true )
+            && isset( $layout['template_data'][ $template ] )
+            && is_array( $layout['template_data'][ $template ] );
+    };
+
+    if ( ! $is_valid_layout( $card_fields, 'grid' ) || ! $is_valid_layout( $list_fields, 'list' ) ) {
+        static $default_archive_fields = null;
+
+        if ( null === $default_archive_fields && class_exists( '\\Directorist\\Multi_Directory\\Multi_Directory_Migration' ) ) {
+            $migration = new \Directorist\Multi_Directory\Multi_Directory_Migration();
+            $widgets   = $migration->get_listings_card_wedgets_data();
+            $args      = [ 'listings_card_wedgets' => $widgets ];
+
+            $default_archive_fields = [
+                'card_fields' => $migration->get_listings_card_grid_view_data( $args ),
+                'list_fields' => $migration->get_listings_card_list_view_data( $args ),
+            ];
+        }
+
+        if ( ! $is_valid_layout( $card_fields, 'grid' ) && ! empty( $default_archive_fields['card_fields'] ) ) {
+            $card_fields = $default_archive_fields['card_fields'];
+        }
+
+        if ( ! $is_valid_layout( $list_fields, 'list' ) && ! empty( $default_archive_fields['list_fields'] ) ) {
+            $list_fields = $default_archive_fields['list_fields'];
+        }
+    }
 
     $data['directory_type_id'] = $directory_type_id;
 

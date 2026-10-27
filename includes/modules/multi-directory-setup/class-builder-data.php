@@ -36,6 +36,32 @@ class Builder_Data {
             ],
         ];
 
+        $badge_builder_widgets = \Directorist\Helper::badge_builder_widgets();
+        $badge_toggle_label    = static function( $widget_key, $fallback ) use ( $badge_builder_widgets ) {
+            if ( empty( $badge_builder_widgets[ $widget_key ]['label'] ) ) {
+                return $fallback;
+            }
+
+            return sprintf( __( 'Display %s', 'directorist' ), $badge_builder_widgets[ $widget_key ]['label'] );
+        };
+        $custom_badge_toggle_fields = [];
+
+        foreach ( \Directorist\Helper::custom_badge_definitions() as $badge_key => $badge ) {
+            $badge_widget_key = \Directorist\Helper::badge_widget_key( $badge_key );
+
+            if ( empty( $badge_widget_key ) ) {
+                continue;
+            }
+
+            $fallback_label = ! empty( $badge['internalName'] ) ? $badge['internalName'] : ( ! empty( $badge['label'] ) ? $badge['label'] : __( 'Custom badge', 'directorist' ) );
+
+            $custom_badge_toggle_fields[ $badge_widget_key ] = [
+                'type'  => "toggle",
+                'label' => $badge_toggle_label( $badge_widget_key, sprintf( __( 'Display %s', 'directorist' ), $fallback_label ) ),
+                'value' => false,
+            ];
+        }
+
         $single_listings_contents_widgets = [
             'preset_widgets' => [
                 'title'         => __( 'Preset Fields', 'directorist' ),
@@ -1902,6 +1928,10 @@ class Builder_Data {
             ] 
         );
 
+        foreach ( $badge_builder_widgets as $badge_widget_key => $badge_widget ) {
+            $listing_card_widget[ $badge_widget_key ] = array_merge( $listing_card_widget[ $badge_widget_key ] ?? [], $badge_widget );
+        }
+
         $listing_card_conditional_widget = $listing_card_widget;
 
         if ( ! empty( $listing_card_conditional_widget['user_avatar'] ) ) {
@@ -2556,7 +2586,7 @@ class Builder_Data {
                         'title'       => __( 'Listing Header', 'directorist' ),
                         'video' => [
                             'type' => 'video',
-                            'url' => 'https://www.youtube.com/embed/NtLXjEAPQzc',
+                            'url' => 'https://www.youtube.com/embed/Viw0q7IBbEM',
                             'button_text' => __( 'Watch Tutorial', 'directorist' ),
                             'title' => __( 'Listing Header Tutorial', 'directorist' ),
                             'description' => __( 'Watch the video to learn how to create listing header.', 'directorist' ),
@@ -2757,23 +2787,26 @@ class Builder_Data {
                                 'icon' => 'la la-circle-notch',
                                 'options' => [
                                     'title' => __( "Badge Settings", "directorist" ),
-                                    'fields' => [
-                                        'new_badge' => [
-                                            'type' => "toggle",
-                                            'label' => __( "Display New Badge", "directorist" ),
-                                            'value' => true,
+                                    'fields' => array_merge(
+                                        [
+                                            'new_badge' => [
+                                                'type' => "toggle",
+                                                'label' => $badge_toggle_label( 'new_badge', __( "Display New Badge", "directorist" ) ),
+                                                'value' => true,
+                                            ],
+                                            'popular_badge' => [
+                                                'type' => "toggle",
+                                                'label' => $badge_toggle_label( 'popular_badge', __( "Display Popular Badge", "directorist" ) ),
+                                                'value' => true,
+                                            ],
+                                            'featured_badge' => [
+                                                'type' => "toggle",
+                                                'label' => $badge_toggle_label( 'featured_badge', __( "Display Featured Badge", "directorist" ) ),
+                                                'value' => true,
+                                            ],
                                         ],
-                                        'popular_badge' => [
-                                            'type' => "toggle",
-                                            'label' => __( "Display Popular Badge", "directorist" ),
-                                            'value' => true,
-                                        ],
-                                        'featured_badge' => [
-                                            'type' => "toggle",
-                                            'label' => __( "Display Featured Badge", "directorist" ),
-                                            'value' => true,
-                                        ],
-                                    ],
+                                        $custom_badge_toggle_fields
+                                    ),
                                 ],
                             ],
                             'ratings_count' => [
@@ -3020,7 +3053,7 @@ class Builder_Data {
                     'container' => 'full-width',
                     'video' => [
                         'type' => 'video',
-                        'url' => 'https://www.youtube.com/embed/0rjSHUPZgoE',
+                        'url' => 'https://www.youtube.com/embed/v-WyJteGXj0',
                         'button_text' => __( 'Watch Tutorial', 'directorist' ),
                         'title' => __( 'Add Listing Form Tutorial', 'directorist' ),
                         'description' => __( 'Watch the video to learn how to create add listing form.', 'directorist' ),
@@ -3070,7 +3103,7 @@ class Builder_Data {
                             'container' => 'full-width',
                             'video' => [
                                 'type' => 'video',
-                                'url' => 'https://www.youtube.com/embed/82CFngofqbM',
+                                'url' => 'https://www.youtube.com/embed/cHkTnUIgba4',
                                 'button_text' => __( 'Watch Tutorial', 'directorist' ),
                                 'title' => __( 'Contents Tutorial', 'directorist' ),
                                 'description' => __( 'Watch the video to learn how to create a custom contents.', 'directorist' ),
@@ -3183,7 +3216,7 @@ class Builder_Data {
                     'container' => 'full-width',
                     'video' => [
                         'type' => 'video',
-                        'url' => 'https://www.youtube.com/embed/bWRDFgFIvcI',
+                        'url' => 'https://www.youtube.com/embed/7PV7WX0ldHI',
                         'button_text' => __( 'Watch Tutorial', 'directorist' ),
                         'title' => __( 'Search Form Tutorial', 'directorist' ),
                         'description' => __( 'Watch the video to learn how to create search form.', 'directorist' ),
@@ -3204,6 +3237,8 @@ class Builder_Data {
         self::$fields = apply_filters( 'directorist/builder/fields', self::$fields );
 
         self::$layouts = apply_filters( 'directorist/builder/layouts', self::$layouts );
+        self::append_custom_badge_widgets_to_accepted_slots( self::$fields );
+        self::append_custom_badge_widgets_to_accepted_slots( self::$layouts );
 
         // Conditional Fields
         // -----------------------------
@@ -3298,6 +3333,32 @@ class Builder_Data {
         }
 
         return $options;
+    }
+
+    protected static function append_custom_badge_widgets_to_accepted_slots( &$data ) {
+        $custom_badge_keys = array_keys( \Directorist\Helper::custom_badge_definitions() );
+
+        if ( empty( $custom_badge_keys ) || ! is_array( $data ) ) {
+            return;
+        }
+
+        $core_badge_keys = [ 'popular_badge', 'featured_badge', 'new_badge' ];
+
+        self::append_badge_widgets_to_accepted_slots( $data, $custom_badge_keys, $core_badge_keys );
+    }
+
+    protected static function append_badge_widgets_to_accepted_slots( &$data, $custom_badge_keys, $core_badge_keys ) {
+        if ( ! is_array( $data ) ) {
+            return;
+        }
+
+        if ( ! empty( $data['acceptedWidgets'] ) && is_array( $data['acceptedWidgets'] ) && array_intersect( $core_badge_keys, $data['acceptedWidgets'] ) ) {
+            $data['acceptedWidgets'] = array_values( array_unique( array_merge( $data['acceptedWidgets'], $custom_badge_keys ) ) );
+        }
+
+        foreach ( $data as &$value ) {
+            self::append_badge_widgets_to_accepted_slots( $value, $custom_badge_keys, $core_badge_keys );
+        }
     }
 
     public function get_fields() {

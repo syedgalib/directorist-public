@@ -1,13 +1,55 @@
 import { get_dom_data } from './../../lib/helper';
+import {
+	directoristMapBridge,
+	normalizeGoogleBounds,
+} from './map-bridge';
 import { initAddListingMap } from './add-listing/google-map';
 import { initSingleMap } from './single-listing/google-map';
 import { initSingleMapWidget } from './single-listing/google-map-widget';
 
 (function () {
-	window.addEventListener('load', initMap);
+	let initialMapInitialized = false;
+
+	function googleMapsReady() {
+		return (
+			typeof google !== 'undefined' &&
+			google.maps &&
+			google.maps.Map &&
+			google.maps.Marker &&
+			google.maps.OverlayView &&
+			google.maps.marker &&
+			google.maps.marker.AdvancedMarkerElement
+		);
+	}
+
+	function initInitialMap() {
+		if (
+			initialMapInitialized ||
+			document.readyState === 'loading' ||
+			!googleMapsReady()
+		) {
+			return;
+		}
+
+		initialMapInitialized = true;
+		initMap();
+		initSingleMap();
+		initAddListingMap();
+		initSingleMapWidget();
+	}
+
+	window.addEventListener('load', initInitialMap);
+	window.addEventListener('directorist-google-maps-ready', initInitialMap);
 	window.addEventListener('directorist-reload-listings-map-archive', initMap);
+	if (document.readyState === 'complete') {
+		initInitialMap();
+	}
 
 	function initMap() {
+		if (!googleMapsReady()) {
+			return;
+		}
+
 		const mapData = get_dom_data('atbdp_map');
 
 		// Define Marker Shapes
@@ -131,6 +173,13 @@ import { initSingleMapWidget } from './single-listing/google-map-widget';
 
 			function atbdp_rander_map($el) {
 				$el.addClass('atbdp-map-loaded');
+				const bridge = directoristMapBridge();
+				const instanceId =
+					$el.data('directorist-map-instance') ||
+					$el.attr('id') ||
+					`directorist-map-${Date.now()}`;
+
+				$el.attr('data-directorist-map-instance', instanceId);
 
 				// var
 				const $markers = $el.find('.marker');
@@ -149,6 +198,28 @@ import { initSingleMapWidget } from './single-listing/google-map-widget';
 
 				// create map
 				const map = new google.maps.Map($el[0], args);
+				let userInteracted = false;
+				const markUserInteraction = function () {
+					userInteracted = true;
+				};
+
+				[
+					'mousedown',
+					'pointerdown',
+					'wheel',
+					'touchstart',
+					'keydown',
+				].forEach(function (eventName) {
+					$el[0].addEventListener(eventName, markUserInteraction, {
+						capture: true,
+						passive: true,
+					});
+				});
+				google.maps.event.addListener(
+					map,
+					'dragstart',
+					markUserInteraction
+				);
 
 				// add a markers reference
 				map.markers = [];
@@ -161,7 +232,7 @@ import { initSingleMapWidget } from './single-listing/google-map-widget';
 				});
 				// add markers
 				$markers.each(function () {
-					atbdp_add_marker($(this), map, infowindow);
+					atbdp_add_marker($(this), map, infowindow, instanceId);
 				});
 
 				var cord = {
@@ -203,6 +274,44 @@ import { initSingleMapWidget } from './single-listing/google-map-widget';
 					//const markerCluster = new MarkerClusterer(map, map.markers, mcOptions);
 					mcOptions.addMarkers(map.markers);
 				}
+
+				bridge.register({
+					instanceId,
+					provider: 'google',
+					element: $el[0],
+					map,
+					markers: map.markers,
+					getBounds() {
+						return normalizeGoogleBounds(map);
+					},
+					openPopup(listingId, html) {
+						const marker = map.markers.find(function (item) {
+							return (
+								parseInt(item.directoristListingId, 10) ===
+								parseInt(listingId, 10)
+							);
+						});
+
+						if (!marker) {
+							return false;
+						}
+
+						infowindow.setContent(
+							html || marker.directoristInfoHtml || ''
+						);
+						infowindow.open(map, marker);
+
+						return true;
+					},
+				});
+
+				google.maps.event.addListener(map, 'idle', function () {
+					if (!userInteracted) {
+						return;
+					}
+
+					bridge.dispatchViewportChanged(instanceId);
+				});
 			}
 
 			/**
@@ -210,12 +319,13 @@ import { initSingleMapWidget } from './single-listing/google-map-widget';
 			 *
 			 *  @since    1.0.0
 			 */
-			function atbdp_add_marker($marker, map, infowindow) {
+			function atbdp_add_marker($marker, map, infowindow, instanceId) {
 				// var
 				let latlng = new google.maps.LatLng(
 					$marker.data('latitude'),
 					$marker.data('longitude')
 				);
+				const listingId = parseInt($marker.data('listing-id'), 10) || 0;
 				// check to see if any of the existing markers match the latlng of the new marker
 				if (map.markers.length) {
 					for (let i = 0; i < map.markers.length; i++) {
@@ -254,11 +364,18 @@ import { initSingleMapWidget } from './single-listing/google-map-widget';
 				});
 
 				// add to array
+				marker.directoristListingId = listingId;
+				marker.directoristInfoHtml = $marker.html();
 				map.markers.push(marker);
 				// if marker contains HTML, add it to an infoWindow
 				if ($marker.html()) {
 					// show info window when marker is clicked
 					google.maps.event.addListener(marker, 'click', function () {
+						directoristMapBridge().dispatchMarkerClick(
+							instanceId,
+							listingId
+						);
+
 						if (mapData.disable_info_window === 'no') {
 							let marker_childrens = $($marker).children();
 
@@ -359,11 +476,5 @@ import { initSingleMapWidget } from './single-listing/google-map-widget';
 })();
 
 window.directoristLoadGoogleMap = function () {
-	if (typeof google === 'undefined' || !google.maps || !google.maps.Map) {
-		return;
-	} else {
-		initSingleMap();
-		initAddListingMap();
-		initSingleMapWidget();
-	}
+	window.dispatchEvent(new Event('directorist-google-maps-ready'));
 };

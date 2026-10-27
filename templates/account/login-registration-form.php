@@ -10,6 +10,7 @@ use \Directorist\Helper;
 $user_email           = isset( $_GET['user'] ) ? sanitize_email( wp_unslash( base64_decode( $_GET['user'] ) ) ) : '';
 $key                  = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : '';
 $registration_success = false;
+$pending_error        = isset( $_GET['pending_registration_error'] ) ? sanitize_key( wp_unslash( $_GET['pending_registration_error'] ) ) : '';
 
 if ( ! empty( $_GET['registration_status'] ) ) {
     $active_form          = 'signin';
@@ -25,6 +26,26 @@ if ( ! empty( $_GET['registration_status'] ) ) {
                     <?php if ( $registration_success ) : ?>
                         <p style="padding: 20px" class="alert-success directorist-alert directorist-alert-success">
                             <span><?php esc_html_e( 'Registration completed. Please check your email for confirmation. Or login here.', 'directorist' );?></span>
+                        </p>
+                    <?php endif; ?>
+
+                    <?php if ( ! empty( $_GET['pending_registration_verified'] ) && empty( $_GET['password_reset'] ) ) : ?>
+                        <p class="directorist-alert directorist-alert-success">
+                            <?php
+                            echo wp_kses(
+                                sprintf(
+                                    __( 'Email verification successful. Please <a href="%s">click here to login</a>.', 'directorist' ),
+                                    esc_url( ATBDP_Permalink::get_signin_signup_page_link() )
+                                ),
+                                [ 'a' => [ 'href' => [] ] ]
+                            );
+                            ?>
+                        </p>
+                    <?php endif; ?>
+
+                    <?php if ( $pending_error ) : ?>
+                        <p class="directorist-alert directorist-alert-danger">
+                            <?php echo esc_html( ATBDP()->user->pending_registration->get_verification_error_message( $pending_error ) ); ?>
                         </p>
                     <?php endif; ?>
 
@@ -122,12 +143,12 @@ if ( ! empty( $_GET['registration_status'] ) ) {
                             <p class="status"></p>
                             <div class="directorist-form-group directorist-mb-15">
                                 <label for="directorist__authentication__signin__username"><?php echo esc_html( $log_username ); ?></label>
-                                <input type="text" class="directorist-form-element" id="username" name="username" />
+                                <input type="text" class="directorist-form-element" id="directorist__authentication__signin__username" name="username" />
                             </div>
 
                             <div class="directorist-form-group directorist-password-group">
                                 <label for="directorist__authentication__signin__password"><?php echo esc_html( $log_password ); ?></label>
-                                <input type="password" id="password" autocomplete="off" name="password" class="directorist-form-element directorist-password-group-input"/>
+                                <input type="password" id="directorist__authentication__signin__password" autocomplete="off" name="password" class="directorist-form-element directorist-password-group-input"/>
                                 <span class="directorist-password-group-toggle">
                                     <svg class="directorist-password-group-eyeIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24">
                                         <path stroke="#888" stroke-width="2" d="M1.5 12S5.5 5.5 12 5.5 22.5 12 22.5 12 18.5 18.5 12 18.5 1.5 12 1.5 12Z"/>
@@ -291,7 +312,7 @@ if ( ! empty( $_GET['registration_status'] ) ) {
                     <form action="#" method="post" class="directorist__authentication__signup">
                         <div class="directorist-form-group directorist-mb-35">
                             <label for="directorist__authentication__signup__username"><?php echo esc_html( $username ); ?> <strong class="directorist-form-required">*</strong></label>
-                            <input id="directorist__authentication__signup__username" class="directorist-form-element" type="text" name="username" value="<?php echo isset( $_REQUEST['username'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_REQUEST['username'] ) ) ) : ''; ?>" required>
+                            <input id="directorist__authentication__signup__username" class="directorist-form-element" type="text" name="username" minlength="4" maxlength="60" value="<?php echo isset( $_REQUEST['username'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_REQUEST['username'] ) ) ) : ''; ?>" required>
                         </div>
                         <div class="directorist-form-group directorist-mb-35">
                             <label for="directorist__authentication__signup__email"><?php echo esc_html( $email ); ?> <strong class="directorist-form-required">*</strong></label>
