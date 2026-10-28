@@ -891,7 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					$(dropdown)
 						.siblings('.directorist-search-basic-dropdown-label')
 						.find(
-							'.directorist-search-basic-dropdown-selected-prefix'
+							'.directorist-search-basic-dropdown-selected-prefix, .directorist-search-basic-dropdown-selected-item'
 						)
 						.text('');
 
@@ -1673,6 +1673,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		$('.address_result').hide();
 
 		// Init Location
+		let googleMapsInitializationPending = false;
 		init_map_api_field();
 		document.body.addEventListener(
 			'directorist-reload-map-api-field',
@@ -1681,6 +1682,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		function init_map_api_field() {
 			if (directorist.i18n_text.select_listing_map === 'google') {
+				if (
+					typeof google === 'undefined' ||
+					!google.maps ||
+					!google.maps.places ||
+					!google.maps.places.Autocomplete
+				) {
+					if (!googleMapsInitializationPending) {
+						googleMapsInitializationPending = true;
+						window.addEventListener(
+							'directorist-google-maps-ready',
+							function () {
+								googleMapsInitializationPending = false;
+								init_map_api_field();
+							},
+							{ once: true }
+						);
+					}
+					return;
+				}
+
 				function initialize() {
 					let opt = {
 						types: ['geocode'],
@@ -1710,7 +1731,10 @@ document.addEventListener('DOMContentLoaded', () => {
 							field.input_class
 						);
 						input.forEach((elm) => {
-							if (!elm) {
+							if (
+								!elm ||
+								elm.dataset.directoristGoogleAutocompleteReady
+							) {
 								return;
 							}
 							let autocomplete =
@@ -1718,6 +1742,7 @@ document.addEventListener('DOMContentLoaded', () => {
 									elm,
 									field.options
 								);
+							elm.dataset.directoristGoogleAutocompleteReady = '1';
 
 							google.maps.event.addListener(
 								autocomplete,
@@ -2620,7 +2645,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 
 			const getFieldValueFn = (fieldKey) =>
-				getFieldValueBase(fieldKey, jQuery);
+				getFieldValueBase(fieldKey, jQuery, getSearchFormWrapper());
 			const evaluateConditionalLogicFn = (conditionalLogic) =>
 				evaluateConditionalLogicBase(conditionalLogic, getFieldValueFn);
 			const applyConditionalLogicFn = ($fieldWrapper) =>

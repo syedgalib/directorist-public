@@ -3,9 +3,9 @@ Contributors: wpwax
 Donate link: https://directorist.com/extensions/
 Tags: business directory, listings, classifieds, directory plugin, directory
 Requires at least: 4.6
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 8.9.4
+Stable tag: 8.10.5
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -299,6 +299,121 @@ Directorist is developer-friendly with plenty of hooks and filters. You can exte
 Directorist comes with an AI-powered directory builder. Use the Create with AI option, provide directory name, location and AI will build the directory for you.
 
 == Changelog ==
+
+= 8.10.5 - Oct 18, 2026 =
+
+**Improved**
+
+- Improved FormGent enquiries with Send and Received tabs in the user dashboard. (#3040)
+
+**Fixed**
+
+- Pricing Plans bank transfer order creation and completion emails not being sent to buyers and admins. (#3087)
+- Installed Mailchimp extension updates not being detected. (#3083)
+- M-Pesa extension installation status and updates not being recognized correctly. (#3082)
+- Installed Listing Importer extension showing the Install button again in Themes & Extensions. (#3081)
+- Category-dependent fields disappearing after selecting a location in listing forms. (#3079)
+- Long listing rejection reasons being clipped in the user dashboard. (#3070)
+- Deactivated or deleted payment gateways remaining visible at checkout. (#3044)
+
+= 8.10.4 - Oct 11, 2026 =
+
+**Improved**
+- Improved Themes & Extensions catalog, account connection, extension recommendations, and activation guidance. (#3067)
+- Improved gateway webhook registration with inline feedback and same-page settings flow. (#3069)
+- Updated licensing links and account connection copy. (#3072)
+
+**Fixed**
+- Payment setup progress when all gateways are disabled. (#3067)
+- Missing accessible labels on sign-in fields. (#3068)
+- Empty or unsaved webhook states showing incorrect registration status. (#3069)
+
+= 8.10.3 - Oct 6, 2026 =
+
+**Security**
+- Hardened listing tag submission and taxonomy dropdown rendering to prevent stored XSS. (#3056)
+- Strengthened REST API item permissions to prevent unauthorized access to non-public listing resources. (#3056)
+- Escaped single listing map info window phone and direction URL output to prevent stored XSS. (#3056)
+
+**Fixed**
+- Google Maps initialization before required map libraries finish loading. (#3055)
+- Malformed archive card layouts not recovering correctly. (#3033)
+- Listing address autocomplete not syncing with the map pin. (#3032)
+- Frontend listing submissions not persisting selected taxonomies. (#3031)
+- Review visibility in the featured listing widget. (#2998)
+- Deprecated PHP warning when rendering taxonomy list subterms with empty category or location children.
+
+= 8.10 - Oct 1, 2026 =
+
+**Added**
+- Introduced a new admin dashboard for Themes & Extensions with account licensing overview, setup progress, activity insights, quick actions, and extension recommendations. (#2932)
+
+**Improved**
+- Improved the setup wizard with an AI-powered directory setup experience. (#3026)
+
+**Fixed**
+- Admin notification templates for listing and order events not applying customized admin email content. (#3042)
+- Mobile sidebar filter toggle missing when View As is disabled. (#3043)
+- Recurring listings expiring despite active subscriptions. (#3035)
+- Expired listing renewals bypassing approval and publish expiry reset. (#3025)
+- Pending review submissions missing a dismissible confirmation notice. (#3024)
+- Frontend dashboard order translations. (#3023)
+- Repeated custom fields in listing card layouts. (#3010)
+- Category conditional logic in add-listing forms. (#3009)
+- CSV category assignments when terms share names across taxonomies. (#3008)
+- Map address search not matching reordered postal codes. (#3007)
+- Blank FormGent enquiries dashboard on WordPress 7.1. (#3005)
+- CSV import validation for WordPress temporary upload filenames. (#3004)
+- Preserved the selected directory type context for listing cards on author profile pages. (#3052)
+
+= 8.9.6 - Sep 20, 2026 =
+
+**Security**
+- Hardened review moderation permissions and owner notifications to prevent private reviewer data exposure. (#3016)
+
+**Improved**
+- Improved listing CSV import and export with Business Hours and social link support. (#3028)
+
+**Fixed**
+- Dashboard listing submissions bypassing the configured Pricing Plans page. (#2999)
+- REST nonce not refreshing after guest listing submissions. (#3006)
+- Advanced search filter labels overlapping and retaining stale values after reset. (#3022)
+
+= 8.9.5 - Sep 14, 2026 =
+
+**Security**
+- Fixed a security issue in order REST API handling. (#3000)
+
+**Improved**
+- Added normalized contact data support for anonymous users. (#2977)
+- Added v2 Listings API improvements. (#2963)
+- Improved native search and account modal customization. (#2996)
+- Improved single listing slider layout controls. (#2995)
+- Improved extension email template placeholders. (#2970)
+- Allowed inactive themes to update from Themes & Extensions. (#2946)
+- Ordered listing card locations by hierarchy. (#2947)
+
+**Fixed**
+- Search reset range slider errors. (#2994)
+- Unavailable listing type and map directions handling. (#2993)
+- Number fields not preserving zero values. (#2988)
+- Multi-directory custom fields in listing export. (#2987)
+- Archive filter directory context. (#2986)
+- Badge condition preview label display. (#2981)
+- Taxonomy directory tabs being intercepted. (#2975)
+- Optional dropdowns auto-selecting the first value. (#2973)
+- Taxonomy subterm depth per root. (#2971)
+- Featured listing order completion emails. (#2966)
+- Multi-directory save flow and Directory Builder access. (#2958)
+- Mobile search modal interaction. (#2953)
+- User creation before email verification. (#2952)
+- Listing creation in the v1 REST API. (#2951)
+- Popular categories filtering before result limit. (#2950)
+- Location edit back-link label. (#2949)
+- Uploads and directory imports failing when using IIS temporary file paths. (#2948)
+- Native Directorist localization textdomains. (#2944)
+- Listing URL validation without explicit schemes. (#2943)
+- Mobile date picker display and instant search behavior. (#2936)
 
 = 8.9.4 - Sep 2, 2026 =
 
