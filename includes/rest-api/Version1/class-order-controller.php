@@ -219,32 +219,46 @@ class Order_Controller extends Abstract_Controller {
             return new WP_Error( 'rest_invalid_listing', __( 'The listing was not found.', 'directorist' ), [ 'status' => 404 ] );
         }
 
-        $amount   = max( 0, round( (float) $request->get_param( 'amount' ), 2 ) );
-        $currency = sanitize_text_field( (string) $request->get_param( 'currency' ) );
-        $dto      = ( new OrderDTO )
+        $plan_id       = (int) $request->get_param( 'plan_id' );
+        $checkout_type = $plan_id ? 'plan' : ( $request->get_param( 'featured' ) ? 'featured_listing' : '' );
+
+        if ( ! $checkout_type || ! in_array( $checkout_type, directorist_get_checkout_types(), true ) ) {
+            return new WP_Error( 'rest_invalid_product', __( 'A supported checkout product is required.', 'directorist' ), [ 'status' => 400 ] );
+        }
+
+        if ( 'featured_listing' === $checkout_type && ( ! $listing_id || ! directorist_is_monetization_enabled() || ! directorist_is_featured_listing_enabled( [ 'type' => 'featured_listing_checkout' ] ) || directorist_is_force_disabled_featured_listings() ) ) {
+            return new WP_Error( 'rest_invalid_product', __( 'Featured listing checkout is not available.', 'directorist' ), [ 'status' => 400 ] );
+        }
+
+        // Use the same product validation and server-owned pricing as checkout.
+        $checkout_request = clone $request;
+        $checkout_request->set_param( 'checkout_type', $checkout_type );
+        $checkout_request->set_param( 'is_featured', $request->get_param( 'featured' ) ? 1 : 0 );
+
+        $dto = ( new OrderDTO )
             ->set_user_id( get_current_user_id() )
-            ->set_amount( $amount )
-            ->set_sub_total( $amount )
-            ->set_currency( $currency ? $currency : atbdp_get_payment_currency() )
+            ->set_currency( atbdp_get_payment_currency() )
             ->set_status( OrderStatus::PENDING );
 
-        if ( $listing_id ) {
-            $dto->set_listing_id( $listing_id );
+        try {
+            do_action( 'directorist_checkout_validation', $checkout_type, $checkout_request );
+            do_action( 'directorist_checkout_create_order', $dto, $checkout_type, $checkout_request );
+
+            $dto = apply_filters( 'directorist_rest_user_order_dto', $dto, $request );
+        } catch ( \Exception $e ) {
+            return new WP_Error( 'rest_invalid_product', $e->getMessage(), [ 'status' => 400 ] );
         }
 
-        $plan_id = (int) $request->get_param( 'plan_id' );
-
-        if ( $plan_id ) {
-            $dto->set_ref( (string) $plan_id )->set_ref_type( 'pricing_plan' );
+        if ( ! $dto->is_initialized( 'amount' ) || ! $dto->is_initialized( 'sub_total' ) || ! $dto->is_initialized( 'ref_type' )
+            || ! is_finite( $dto->get_amount() ) || $dto->get_amount() < 0
+            || ! is_finite( $dto->get_sub_total() ) || $dto->get_sub_total() < 0
+        ) {
+            return new WP_Error( 'rest_invalid_product', __( 'Unable to determine the checkout price.', 'directorist' ), [ 'status' => 400 ] );
         }
 
-        if ( $request->get_param( 'featured' ) ) {
-            $dto->set_is_featured_listing( 1 );
-        }
-
-        $dto        = apply_filters( 'directorist_rest_user_order_dto', $dto, $request );
         $repository = directorist_order_repository();
-        $order_id   = $repository->create( $dto );
+        // Pricing plan providers may already have created the order and its metadata.
+        $order_id = $dto->is_initialized( 'id' ) ? $dto->get_id() : $repository->create( $dto );
 
         if ( ! $order_id ) {
             return new WP_Error( 'rest_order_create_failed', __( 'Unable to create the order.', 'directorist' ), [ 'status' => 500 ] );
@@ -468,14 +482,14 @@ class Order_Controller extends Abstract_Controller {
                 'required'          => false,
             ],
             'amount'     => [
-                'description' => __( 'The order amount.', 'directorist' ),
+                'description' => __( 'Compatibility parameter. The order amount is calculated on the server.', 'directorist' ),
                 'type'        => 'number',
                 'minimum'     => 0,
                 'default'     => 0,
                 'required'    => false,
             ],
             'currency'   => [
-                'description'       => __( 'The order currency.', 'directorist' ),
+                'description'       => __( 'Compatibility parameter. The configured checkout currency is used.', 'directorist' ),
                 'type'              => 'string',
                 'sanitize_callback' => 'sanitize_text_field',
                 'required'          => false,
